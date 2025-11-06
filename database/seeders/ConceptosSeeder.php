@@ -20,7 +20,7 @@ use Illuminate\Database\Seeder;
 use Faker\Factory as FakerFactory;
 class ConceptosSeeder extends Seeder
 {
-    
+
     public function run(): void
     {
         // Deshabilitamos temporalmente el registro de acciones, ya que estamos ejecutando un seeder.
@@ -30,7 +30,7 @@ class ConceptosSeeder extends Seeder
             [
                 'accion' => 'VER',
             ]);
-        
+
         ConceptoAccion::create(
             [
                 'accion' => 'EDITAR',
@@ -68,7 +68,7 @@ class ConceptosSeeder extends Seeder
             foreach ($meses as $mes) {
                 foreach ($escalas as $escala => $monto) {
                     ConceptoPago::create([
-                        'descripcion' => "MENSUALIDAD $mes $anio ESCALA $escala",
+                        'descripcion' => "$mes $anio",
                         'escala' => $escala,
                         'monto' => $monto,
                         'estado' => true,
@@ -79,7 +79,7 @@ class ConceptosSeeder extends Seeder
 
         $departamentos = ['Personal Docente Inicial','Personal Docente Primaria','Personal Docente Secundaria'];
 
-        
+
         $datosdepartamentos = [];
 
         foreach($departamentos as $departamento){
@@ -198,7 +198,7 @@ class ConceptosSeeder extends Seeder
             foreach ($cursos as $curso) {
                 if($nivel->nombre_nivel == "Inicial"){
                     if(!$curso['nivel_inicial']){
-                    
+
                     }else{
                         $nuevocurso = Curso::create([
                             'codigo_curso' => $curso['codigo_curso'],
@@ -217,7 +217,7 @@ class ConceptosSeeder extends Seeder
                     $datoscursos[] = $nuevocurso;
                 }
             }
-            
+
         }
 
         $añosescolares = [
@@ -254,7 +254,7 @@ class ConceptosSeeder extends Seeder
                 $datossecciones[] = $nuevaseccion;
             }
         }
-        
+
         //Crear por cada seccion un profesor de categoria Titular, otro de categoria Asociado y otro de categoria Auxiliar
         //seccion depende de grado, grado depende de nivel educativo y si nivel educativo es Inicial, departamento academico tambien inicial, lo mismo con primaria y secundaria
         //el username que sea personal_$categoria_dni; puros nombres en español y apellidos igual, telefonos peruanos +51, fecha de ingreso todos del 2025
@@ -273,7 +273,7 @@ class ConceptosSeeder extends Seeder
             // Obtener nivel educativo del grado
             $nivel = collect($datosniveleseducativos)->firstWhere('id_nivel', $grado->id_nivel);
 
-            
+
             // Determinar departamento según nivel
             switch ($nivel->nombre_nivel) {
                 case 'Inicial':
@@ -326,9 +326,9 @@ class ConceptosSeeder extends Seeder
             }
         }
 
-        #Modificar de tal forma que cada docente Titular tenga una cátedra, es decir, por cada combinación de grado, curso y/o seccion asignar uno de los docentes titulares; 
+        #Modificar de tal forma que cada docente Titular tenga una cátedra, es decir, por cada combinación de grado, curso y/o seccion asignar uno de los docentes titulares;
         #se supone que hay una cantidad igual de secciones y docentes, por lo que habría que asignar a un docente por seccion
-        
+
         foreach ($datossecciones as $seccion) {
 
             $grado = collect($datosgrados)->firstWhere('id_grado', $seccion->id_grado);
@@ -341,7 +341,7 @@ class ConceptosSeeder extends Seeder
             foreach ($datoscursos as $curso) {
 
                 if ($curso->id_nivel !== $nivel->id_nivel) {
-                    continue; 
+                    continue;
                 }
 
                 foreach ($añosescolares as $año) {
