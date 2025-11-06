@@ -5,70 +5,46 @@ Generar Solicitud de Traslado
 @endsection
 
 @section('contenido')
-<!-- Contenedor Principal con Gradiente -->
+<!-- Contenedor Principal -->
 <div class="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
 
-    <!-- Header Mejorado con Icono y Gradiente -->
-    <div class="mb-8 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 p-6 ">
-        <div class="flex items-center">
-            <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-                <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
-                </svg>
-            </div>
-            <div class="ml-5">
-                <h2 class="text-3xl font-bold text-white">
-                    Generar Solicitud de Traslado
-                </h2>
-                <p class="mt-1 text-sm text-white/80">
-                    Busque al alumno por código de educando para verificar su situación y generar la solicitud
-                </p>
-            </div>
-        </div>
+    <!-- Header -->
+    <div class="mb-6">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
+            Generar Solicitud de Traslado
+        </h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Busque al alumno por código de educando para verificar su situación y generar la solicitud
+        </p>
     </div>
 
-    <!-- Card de Búsqueda Mejorado bg-gradient-to-r from-gray-50 to-gray-100-->
-    <div class="rounded-xl border border-stroke bg-white  dark:border-strokedark dark:bg-boxdark mb-8 overflow-hidden">
-        <!-- Header del Card -->
-        <div class="border-b border-stroke bg-blue-400 px-7 py-5 dark:border-strokedark dark:from-meta-4 dark:to-meta-4">
-            <div class="flex items-center">
-                <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-primary">
-                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                </div>
-                <h3 class="ml-4 text-xl font-semibold text-black dark:text-white">
-                    Buscar Alumno
-                </h3>
-            </div>
+    <!-- Card de Búsqueda -->
+    <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-6 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 mb-6">
+
+        <div class="mb-4">
+            <h3 class="text-base font-semibold text-gray-800 dark:text-white/90">
+                Buscar Alumno
+            </h3>
         </div>
 
-        <!-- Contenido del Card -->
-        <div class="p-7">
-            <div class="mb-5">
-                <label class="mb-3 block text-sm font-semibold text-black dark:text-white">
+        <div class="space-y-4">
+            <div>
+                <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Código de Educando
-                    <span class="ml-1 text-xs font-normal text-gray-500">(6 dígitos)</span>
+                    <span class="ml-1 text-xs font-normal text-gray-500 dark:text-gray-400">(6 dígitos)</span>
                 </label>
-                <div class="relative">
-                    <span class="absolute left-4 top-1/2 -translate-y-1/2">
-                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                        </svg>
-                    </span>
-                    <input
-                        type="text"
-                        id="codigo_educando"
-                        placeholder="Ej: 166787"
-                        maxlength="6"
-                        class="w-full rounded-lg border-2 border-stroke bg-transparent py-4 pl-12 pr-5 text-lg font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
-                    />
-                </div>
-                <div class="mt-3 flex items-start rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
-                    <svg class="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                <input
+                    type="text"
+                    id="codigo_educando"
+                    placeholder="Ej: 166787"
+                    maxlength="6"
+                    class="h-[42px] w-full rounded-lg border border-gray-300 bg-transparent py-2.5 px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                />
+                <div class="mt-2 flex items-start gap-2 rounded-lg bg-blue-50 p-3 dark:bg-blue-900/10">
+                    <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
                     </svg>
-                    <p class="ml-3 text-sm text-blue-700 dark:text-blue-300">
+                    <p class="text-xs text-blue-700 dark:text-blue-300">
                         <strong>Tip:</strong> Ingrese el código de educando del alumno (ejemplo: 166787)
                     </p>
                 </div>
@@ -77,7 +53,7 @@ Generar Solicitud de Traslado
             <button
                 type="button"
                 id="btnBuscar"
-                class="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-400 py-4 font-semibold text-white transition hover:bg-opacity-90 hover:shadow-xl active:scale-98"
+                class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-300 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
             >
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -87,115 +63,94 @@ Generar Solicitud de Traslado
         </div>
     </div>
 
-    <!-- Loading Spinner Mejorado -->
-    <div id="loadingSpinner" style="display: none;" class="rounded-xl border border-stroke bg-white shadow-lg dark:border-strokedark dark:bg-boxdark p-12">
-        <div class="flex flex-col items-center justify-center">
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" style="display: none;" class="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-6 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
+        <div class="flex flex-col items-center justify-center py-12">
             <div class="relative">
-                <div class="h-20 w-20 animate-spin rounded-full border-4 border-solid border-primary border-t-transparent"></div>
-                <div class="absolute inset-0 flex items-center justify-center">
-                    <svg class="h-8 w-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                </div>
+                <div class="h-16 w-16 animate-spin rounded-full border-4 border-solid border-gray-300 border-t-gray-600 dark:border-gray-700 dark:border-t-gray-400"></div>
             </div>
-            <p class="mt-6 text-lg font-medium text-black dark:text-white">Buscando alumno...</p>
-            <p class="mt-2 text-sm text-gray-500">Por favor espere un momento</p>
+            <p class="mt-6 text-base font-medium text-gray-800 dark:text-white/90">Buscando alumno...</p>
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Por favor espere un momento</p>
         </div>
     </div>
 
     <!-- Área de Resultados -->
     <div id="resultadosBusqueda" style="display: none;">
 
-        <!-- Información del Alumno Mejorada -->
-        <div class="rounded-xl border border-stroke bg-white shadow-lg dark:border-strokedark dark:bg-boxdark mb-6 overflow-hidden">
-            <div class="border-b border-stroke bg-gradient-to-r from-green-50 to-emerald-50 px-7 py-5 dark:border-strokedark dark:from-meta-4 dark:to-meta-4">
-                <div class="flex items-center">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-600">
-                        <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="ml-4 text-xl font-semibold text-black dark:text-white">
-                        Información del Alumno
-                    </h3>
-                </div>
+        <!-- Información del Alumno -->
+        <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-6 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 mb-6">
+            <div class="mb-4">
+                <h3 class="text-base font-semibold text-gray-800 dark:text-white/90">
+                    Información del Alumno
+                </h3>
             </div>
-            <div class="p-7">
-                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
-                        <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Código de Educando</p>
-                        <p class="text-xl font-bold text-black dark:text-white" id="alumno-codigo"></p>
-                    </div>
-                    <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
-                        <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nombre Completo</p>
-                        <p class="text-xl font-bold text-black dark:text-white" id="alumno-nombre"></p>
-                    </div>
-                    <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
-                        <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">DNI</p>
-                        <p class="text-xl font-bold text-black dark:text-white" id="alumno-dni"></p>
-                    </div>
-                    <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
-                        <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Información Académica</p>
-                        <p class="text-xl font-bold text-black dark:text-white" id="alumno-grado"></p>
-                    </div>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+                    <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Código de Educando</p>
+                    <p class="text-base font-semibold text-gray-800 dark:text-white/90" id="alumno-codigo"></p>
+                </div>
+                <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+                    <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nombre Completo</p>
+                    <p class="text-base font-semibold text-gray-800 dark:text-white/90" id="alumno-nombre"></p>
+                </div>
+                <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+                    <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">DNI</p>
+                    <p class="text-base font-semibold text-gray-800 dark:text-white/90" id="alumno-dni"></p>
+                </div>
+                <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+                    <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Información Académica</p>
+                    <p class="text-base font-semibold text-gray-800 dark:text-white/90" id="alumno-grado"></p>
                 </div>
             </div>
         </div>
 
         <!-- Sección de Deudas (Si tiene) -->
         <div id="seccionDeudas" style="display: none;">
-            <div class="rounded-xl border-2 border-red-200 bg-white shadow-xl dark:border-red-900 dark:bg-boxdark mb-6 overflow-hidden">
-                <div class="border-b-2 border-red-200 bg-gradient-to-r from-red-50 to-red-100 px-7 py-5 dark:border-red-900 dark:from-red-900/20 dark:to-red-900/20">
-                    <div class="flex items-center">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-red-600">
-                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                            </svg>
-                        </div>
-                        <h3 class="ml-4 text-xl font-semibold text-red-600 dark:text-red-400">
-                            ⚠️ Deudas Pendientes Detectadas
-                        </h3>
-                    </div>
+            <div class="overflow-hidden rounded-2xl border border-red-200 bg-white px-4 pb-6 pt-4 dark:border-red-800 dark:bg-white/[0.03] sm:px-6 mb-6">
+                <div class="mb-4">
+                    <h3 class="text-base font-semibold text-red-600 dark:text-red-400">
+                        Deudas Pendientes Detectadas
+                    </h3>
                 </div>
-                <div class="p-7">
-                    <!-- Alerta Prominente -->
-                    <div class="mb-6 rounded-xl border-l-4 border-red-600 bg-red-50 p-6 shadow-md dark:bg-red-900/20">
+                <div class="space-y-4">
+                    <!-- Alerta -->
+                    <div class="rounded-lg border-l-4 border-red-600 bg-red-50 p-4 dark:bg-red-900/10">
                         <div class="flex">
                             <div class="flex-shrink-0">
-                                <svg class="h-8 w-8 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                <svg class="h-5 w-5 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
                                 </svg>
                             </div>
-                            <div class="ml-4">
-                                <h4 class="mb-2 text-lg font-bold text-red-800 dark:text-red-300">
+                            <div class="ml-3">
+                                <h4 class="text-sm font-semibold text-red-800 dark:text-red-300">
                                     No se puede procesar la solicitud de traslado
                                 </h4>
-                                <p class="text-base leading-relaxed text-red-700 dark:text-red-200">
+                                <p class="mt-1 text-sm text-red-700 dark:text-red-200">
                                     El alumno tiene deudas pendientes. Debe regularizar su situación financiera antes de solicitar el traslado.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Tabla de Deudas Mejorada -->
-                    <div class="rounded-lg border-2 border-red-100 overflow-hidden dark:border-red-900/50">
+                    <!-- Tabla de Deudas -->
+                    <div class="rounded-lg border border-gray-200 overflow-hidden dark:border-gray-800">
                         <div class="overflow-x-auto">
-                            <table class="w-full">
+                            <table class="w-full text-sm">
                                 <thead>
-                                    <tr class="bg-gradient-to-r from-red-600 to-red-700 text-white">
-                                        <th class="px-5 py-4 text-left text-sm font-bold uppercase tracking-wider">Concepto</th>
-                                        <th class="px-5 py-4 text-left text-sm font-bold uppercase tracking-wider">Período</th>
-                                        <th class="px-5 py-4 text-left text-sm font-bold uppercase tracking-wider">Fecha Límite</th>
-                                        <th class="px-5 py-4 text-right text-sm font-bold uppercase tracking-wider">Monto Total</th>
-                                        <th class="px-5 py-4 text-right text-sm font-bold uppercase tracking-wider">Pendiente</th>
+                                    <tr class="border-gray-100 border-y bg-red-600 text-white dark:border-gray-800">
+                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase">Concepto</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase">Período</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase">Fecha Límite</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium uppercase">Monto Total</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium uppercase">Pendiente</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tablaDeudas" class="divide-y divide-red-100 dark:divide-red-900/50">
+                                <tbody id="tablaDeudas" class="divide-y divide-gray-100 dark:divide-gray-800">
                                 </tbody>
                                 <tfoot>
-                                    <tr class="bg-gradient-to-r from-red-600 to-red-700 text-white">
-                                        <td colspan="4" class="px-5 py-4 text-right text-base font-bold">TOTAL PENDIENTE:</td>
-                                        <td class="px-5 py-4 text-right text-xl font-bold">S/ <span id="totalPendiente"></span></td>
+                                    <tr class="bg-red-600 text-white">
+                                        <td colspan="4" class="px-4 py-3 text-right text-sm font-semibold">TOTAL PENDIENTE:</td>
+                                        <td class="px-4 py-3 text-right text-base font-bold">S/ <span id="totalPendiente"></span></td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -207,51 +162,44 @@ Generar Solicitud de Traslado
 
         <!-- Sección Sin Deudas - Formulario -->
         <div id="seccionSinDeudas" style="display: none;">
-            <!-- Alerta de Éxito Mejorada -->
-            <div class="mb-6 rounded-xl border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-6 shadow-lg dark:border-green-900 dark:from-green-900/20 dark:to-emerald-900/20">
+            <!-- Alerta de Éxito -->
+            <div class="mb-6 rounded-lg border-l-4 border-green-600 bg-green-50 p-4 dark:bg-green-900/10">
                 <div class="flex items-center">
-                    <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-green-600">
-                        <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-green-600">
+                        <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
                         </svg>
                     </div>
-                    <div class="ml-5">
-                        <h4 class="text-lg font-bold text-green-800 dark:text-green-300">
-                            ✅ Sin Deudas Pendientes
+                    <div class="ml-4">
+                        <h4 class="text-sm font-semibold text-green-800 dark:text-green-300">
+                            Sin Deudas Pendientes
                         </h4>
-                        <p class="mt-1 text-base text-green-700 dark:text-green-200">
+                        <p class="mt-1 text-sm text-green-700 dark:text-green-200">
                             El alumno no tiene deudas pendientes. Puede proceder con la solicitud de traslado.
                         </p>
                     </div>
                 </div>
             </div>
 
-            <!-- Formulario de Solicitud Mejorado -->
-            <div class="rounded-xl border border-stroke bg-white shadow-xl dark:border-strokedark dark:bg-boxdark overflow-hidden">
-                <div class="border-b border-stroke bg-gradient-to-r from-blue-50 to-indigo-50 px-7 py-5 dark:border-strokedark dark:from-meta-4 dark:to-meta-4">
-                    <div class="flex items-center">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-600">
-                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                        </div>
-                        <h3 class="ml-4 text-xl font-semibold text-black dark:text-white">
-                            Datos de la Solicitud de Traslado
-                        </h3>
-                    </div>
+            <!-- Formulario de Solicitud -->
+            <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-6 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
+                <div class="mb-4">
+                    <h3 class="text-base font-semibold text-gray-800 dark:text-white/90">
+                        Datos de la Solicitud de Traslado
+                    </h3>
                 </div>
-                <div class="p-7">
-                    <form id="formSolicitudTraslado" class="space-y-6">
+                <div class="space-y-5">
+                    <form id="formSolicitudTraslado" class="space-y-5">
                         <input type="hidden" id="id_alumno" name="id_alumno">
 
                         <!-- Fila 1 -->
-                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                             <div>
-                                <label class="mb-3 block text-sm font-bold text-black dark:text-white" for="colegio_destino">
+                                <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300" for="colegio_destino">
                                     Colegio de Destino <span class="text-red-500">*</span>
                                 </label>
                                 <input
-                                    class="w-full rounded-lg border-2 border-stroke bg-gray-50 py-3.5 px-4.5 text-black transition focus:border-primary focus:bg-white focus-visible:outline-none dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+                                    class="h-[42px] w-full rounded-lg border border-gray-300 bg-transparent py-2.5 px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                                     type="text"
                                     name="colegio_destino"
                                     id="colegio_destino"
@@ -261,11 +209,11 @@ Generar Solicitud de Traslado
                             </div>
 
                             <div>
-                                <label class="mb-3 block text-sm font-bold text-black dark:text-white" for="fecha_traslado">
+                                <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300" for="fecha_traslado">
                                     Fecha de Traslado <span class="text-red-500">*</span>
                                 </label>
                                 <input
-                                    class="w-full rounded-lg border-2 border-stroke bg-gray-50 py-3.5 px-4.5 text-black transition focus:border-primary focus:bg-white focus-visible:outline-none dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+                                    class="h-[42px] w-full rounded-lg border border-gray-300 bg-transparent py-2.5 px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                                     type="date"
                                     name="fecha_traslado"
                                     id="fecha_traslado"
@@ -275,13 +223,13 @@ Generar Solicitud de Traslado
                         </div>
 
                         <!-- Fila 2 -->
-                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                             <div>
-                                <label class="mb-3 block text-sm font-bold text-black dark:text-white" for="direccion_nuevo_colegio">
+                                <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300" for="direccion_nuevo_colegio">
                                     Dirección del Nuevo Colegio
                                 </label>
                                 <input
-                                    class="w-full rounded-lg border-2 border-stroke bg-gray-50 py-3.5 px-4.5 text-black transition focus:border-primary focus:bg-white focus-visible:outline-none dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+                                    class="h-[42px] w-full rounded-lg border border-gray-300 bg-transparent py-2.5 px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                                     type="text"
                                     name="direccion_nuevo_colegio"
                                     id="direccion_nuevo_colegio"
@@ -290,11 +238,11 @@ Generar Solicitud de Traslado
                             </div>
 
                             <div>
-                                <label class="mb-3 block text-sm font-bold text-black dark:text-white" for="telefono_nuevo_colegio">
+                                <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300" for="telefono_nuevo_colegio">
                                     Teléfono del Nuevo Colegio
                                 </label>
                                 <input
-                                    class="w-full rounded-lg border-2 border-stroke bg-gray-50 py-3.5 px-4.5 text-black transition focus:border-primary focus:bg-white focus-visible:outline-none dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+                                    class="h-[42px] w-full rounded-lg border border-gray-300 bg-transparent py-2.5 px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                                     type="text"
                                     name="telefono_nuevo_colegio"
                                     id="telefono_nuevo_colegio"
@@ -305,11 +253,11 @@ Generar Solicitud de Traslado
 
                         <!-- Motivo -->
                         <div>
-                            <label class="mb-3 block text-sm font-bold text-black dark:text-white" for="motivo_traslado">
+                            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300" for="motivo_traslado">
                                 Motivo del Traslado <span class="text-red-500">*</span>
                             </label>
                             <textarea
-                                class="w-full rounded-lg border-2 border-stroke bg-gray-50 py-3.5 px-4.5 text-black transition focus:border-primary focus:bg-white focus-visible:outline-none dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+                                class="w-full rounded-lg border border-gray-300 bg-transparent py-2.5 px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                                 name="motivo_traslado"
                                 id="motivo_traslado"
                                 rows="4"
@@ -320,11 +268,11 @@ Generar Solicitud de Traslado
 
                         <!-- Observaciones -->
                         <div>
-                            <label class="mb-3 block text-sm font-bold text-black dark:text-white" for="observaciones">
+                            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300" for="observaciones">
                                 Observaciones Adicionales
                             </label>
                             <textarea
-                                class="w-full rounded-lg border-2 border-stroke bg-gray-50 py-3.5 px-4.5 text-black transition focus:border-primary focus:bg-white focus-visible:outline-none dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+                                class="w-full rounded-lg border border-gray-300 bg-transparent py-2.5 px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                                 name="observaciones"
                                 id="observaciones"
                                 rows="3"
@@ -332,13 +280,13 @@ Generar Solicitud de Traslado
                             ></textarea>
                         </div>
 
-                        <!-- Botones Mejorados -->
-                        <div class="flex gap-4 pt-4">
+                        <!-- Botones -->
+                        <div class="flex gap-3 pt-4">
                             <button
                                 type="submit"
-                                class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 py-4 font-bold text-white shadow-lg transition hover:from-blue-700 hover:to-purple-700 hover:shadow-xl active:scale-98"
+                                class="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-300 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
                             >
-                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                                 </svg>
                                 Enviar Solicitud de Traslado
@@ -346,7 +294,7 @@ Generar Solicitud de Traslado
                             <button
                                 type="button"
                                 onclick="location.reload()"
-                                class="flex flex-1 items-center justify-center gap-2 rounded-lg border-2 border-stroke bg-white py-4 font-bold text-black shadow-md transition hover:bg-gray-50 hover:shadow-lg active:scale-98 dark:border-strokedark dark:bg-boxdark dark:text-white dark:hover:bg-meta-4"
+                                class="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
                             >
                                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
