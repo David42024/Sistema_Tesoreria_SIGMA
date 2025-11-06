@@ -9,7 +9,7 @@ Generar Solicitud de Traslado
 <div class="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
 
     <!-- Header Mejorado con Icono y Gradiente -->
-    <div class="mb-8 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 p-6 shadow-xl">
+    <div class="mb-8 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 p-6 ">
         <div class="flex items-center">
             <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
                 <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -27,10 +27,10 @@ Generar Solicitud de Traslado
         </div>
     </div>
 
-    <!-- Card de Búsqueda Mejorado -->
-    <div class="rounded-xl border border-stroke bg-white shadow-lg dark:border-strokedark dark:bg-boxdark mb-8 overflow-hidden">
+    <!-- Card de Búsqueda Mejorado bg-gradient-to-r from-gray-50 to-gray-100-->
+    <div class="rounded-xl border border-stroke bg-white  dark:border-strokedark dark:bg-boxdark mb-8 overflow-hidden">
         <!-- Header del Card -->
-        <div class="border-b border-stroke bg-gradient-to-r from-gray-50 to-gray-100 px-7 py-5 dark:border-strokedark dark:from-meta-4 dark:to-meta-4">
+        <div class="border-b border-stroke bg-blue-400 px-7 py-5 dark:border-strokedark dark:from-meta-4 dark:to-meta-4">
             <div class="flex items-center">
                 <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-primary">
                     <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,7 +77,7 @@ Generar Solicitud de Traslado
             <button
                 type="button"
                 id="btnBuscar"
-                class="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-4 font-semibold text-white shadow-lg transition hover:bg-opacity-90 hover:shadow-xl active:scale-98"
+                class="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-400 py-4 font-semibold text-white transition hover:bg-opacity-90 hover:shadow-xl active:scale-98"
             >
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>

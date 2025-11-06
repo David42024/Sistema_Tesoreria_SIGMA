@@ -6,8 +6,10 @@ use App\Models\Alumno;
 use App\Models\Deuda;
 use App\Models\SolicitudTraslado;
 use Illuminate\Http\Request;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 class SolicitudTrasladoController extends Controller
 {
@@ -166,11 +168,29 @@ class SolicitudTrasladoController extends Controller
             'fecha_generacion' => now()->format('d/m/Y H:i:s'),
         ];
 
-        $pdf = PDF::loadView('gestiones.solicitud-traslado.pdf', $data);
+        // Renderizar la vista HTML
+        $html = view('gestiones.solicitud-traslado.pdf', $data)->render();
 
+        // Configurar opciones de Dompdf
+        $options = new Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'Arial');
+
+        // Generar PDF
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        // Nombre del archivo
         $nombreArchivo = 'Solicitud_Traslado_' . str_replace(' ', '_', $nombreCompleto) . '_' . $codigoSolicitud . '.pdf';
 
-        return $pdf->download($nombreArchivo);
+        // Retornar PDF para descarga
+        return response($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $nombreArchivo . '"'
+        ]);
     }
 
     /**

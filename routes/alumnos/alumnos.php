@@ -54,6 +54,3 @@ Route::group(['middleware' => ['can:manage-resource,"alumnos","download"']], fun
 
     Route::redirect('/mas/export', '/alumnos/export');
 });
-
-// Rutas para solicitudes de traslado (UI + APIs AJAX + envío de PDF)
-require __DIR__ . '/traslados.php';
