@@ -35,76 +35,15 @@ class DatabaseSeeder extends Seeder
         // Deshabilitamos temporalmente el registro de acciones, ya que estamos ejecutando un seeder.
         LogsActions::disable();
 
-        User::factory(5)->create();
-        Administrativo::factory(5)->create();
-        Alumno::factory(5)->create();
-        ComposicionFamiliar::factory(5)->create();
-
-        ConceptoAccion::create(
-            [
-                'accion' => 'VER',
-            ]);
-        
-        ConceptoAccion::create(
-            [
-                'accion' => 'EDITAR',
-            ]);
-
-        ConceptoAccion::create(
-            [
-                'accion' => 'ELIMINAR',
-            ]);
-
-        ConceptoAccion::create(
-            [
-                'accion' => 'RESTAURAR',
-            ]);
-
-        ConceptoAccion::create(
-            [
-                'accion' => 'CREAR',
-            ]);
-
-        $meses = [
-                'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
-                'JULIO', 'AGOSTO', 'SETIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
-                ];
-        $anios = [2025, 2026];
-        $escalas = [
-            'A' => 500.00,
-            'B' => 400.00,
-            'C' => 300.00,
-            'D' => 200.00,
-            'E' => 100.00,
-        ];
-
-        foreach ($anios as $anio) {
-            foreach ($meses as $mes) {
-                foreach ($escalas as $escala => $monto) {
-                    ConceptoPago::create([
-                        'descripcion' => "$mes $anio",
-                        'escala' => $escala,
-                        'monto' => $monto,
-                        'estado' => 1,
-                    ]);
-                }
-            }
-        }
-
-        ConceptoPago::factory(5)->create();
-        Curso_Grado::factory(5)->create();
-        Curso::factory(5)->create();
-        DepartamentoAcademico::factory(5)->create();
-        DetallePago::factory(5)->create();
-        Deuda::factory(5)->create();
-        Familiar::factory(5)->create();
-        Grado::factory(5)->create();
-        Matricula::factory(5)->create();
-        NivelEducativo::factory(3)->create();
-        Pago::factory(5)->create();
-        Personal::factory(5)->create();
-        Seccion::factory(5)->create();
-        Catedra::factory(5)->create();
+        // Ejecutar seeders en el orden correcto
+        // IMPORTANTE: ConceptosSeeder debe ejecutarse PRIMERO porque crea la estructura base
+        $this->call([
+            ConceptosSeeder::class,    // 1. Crea niveles, grados, secciones, conceptos de pago, etc.
+            UsuariosSeeder::class,     // 2. Crea usuarios del sistema
+            TestUsersSeeder::class,    // 3. Crea usuarios de prueba
+            PoliticaSeeder::class,     // 4. Crea políticas
+            AlumnosSeeder::class,      // 5. Crea alumnos (depende de ConceptosSeeder)
+        ]);
 
         // Restablecemos el registro de acciones.
         LogsActions::enable();
