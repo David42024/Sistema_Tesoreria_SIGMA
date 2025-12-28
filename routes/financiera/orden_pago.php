@@ -14,6 +14,16 @@ Route::group(['middleware' => ['can:manage-resource,"financiera","create"']], fu
 
     Route::get('/buscarAlumno/{codigo}', [OrdenPagoController::class,'buscarAlumno'])
         ->name('buscarAlumno');
+
+    // Nuevas rutas para búsqueda en tiempo real
+    Route::get('/buscar-alumnos-nombre', [OrdenPagoController::class, 'buscarAlumnosPorNombre'])
+        ->name('buscarAlumnosPorNombre');
+
+    Route::get('/obtener-grados', [OrdenPagoController::class, 'obtenerGrados'])
+        ->name('obtenerGrados');
+
+    Route::get('/obtener-secciones', [OrdenPagoController::class, 'obtenerSecciones'])
+        ->name('obtenerSecciones');
 });
 
 Route::group(['middleware' => ['can:manage-resource,"financiera","view_details"']], function(){

@@ -296,11 +296,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                         
                         if (montoTotalInput) {
-                            montoTotalInput.value = montoTotal.toFixed(2);
+                            montoTotalInput.value = `S/ ${montoTotal.toFixed(2)}`;
                             console.log('✅ monto_total_a_pagar llenado:', montoTotalInput.value);
                         }
                         if (montoPagadoInput) {
-                            montoPagadoInput.value = montoPagado.toFixed(2);
+                            montoPagadoInput.value = `S/ ${montoPagado.toFixed(2)}`;
                             console.log('✅ monto_pagado llenado:', montoPagadoInput.value);
                         }
                     }
@@ -584,7 +584,23 @@ document.addEventListener('DOMContentLoaded', function() {
             form.setAttribute('action', actionUrl);
             form.setAttribute('method', 'POST');
         }
-        
+
+        // Guardar la orden cargada globalmente para que otros modos (ej. deuda_individual)
+        // puedan acceder a ella si el usuario cambia de modo después de la carga
+        window.currentOrdenData = orden;
+
+        // Si existe el select de deudas en la vista de Deuda Individual, cargarlo
+        // desde la orden (esto asegura que al buscar por orden se muestren las deudas)
+        const selectDeuda = document.getElementById('select_deuda') || document.getElementById('id_deuda');
+        if (selectDeuda && typeof cargarDeudasDesdeOrden === 'function') {
+            try {
+                cargarDeudasDesdeOrden(orden);
+                console.log('✅ cargarDeudasDesdeOrden invocado desde mostrarInformacionOrden');
+            } catch (err) {
+                console.error('❌ Error al invocar cargarDeudasDesdeOrden:', err);
+            }
+        }
+
         // Disparar evento para que otros componentes sepan que se cargó la orden
         window.dispatchEvent(new CustomEvent('ordenCargada', {
             detail: {
@@ -617,6 +633,34 @@ document.addEventListener('DOMContentLoaded', function() {
             
             montoTotalOrdenPagar.value = `S/ ${montoTotal.toFixed(2)}`;
             montoPagadoOrden.value = `S/ ${montoPagado.toFixed(2)}`;
+        });
+    }
+
+    // Listener para select_deuda (Deuda Individual) — rellena montos al cambiar la deuda
+    const selectDeudaGlobal = document.getElementById('select_deuda') || document.getElementById('id_deuda');
+    if (selectDeudaGlobal) {
+        selectDeudaGlobal.addEventListener('change', function() {
+            const opt = selectDeudaGlobal.options[selectDeudaGlobal.selectedIndex];
+            const montoTotalInput = document.getElementById('monto_total_a_pagar');
+            const montoPagadoInput = document.getElementById('monto_pagado');
+            const montoPendienteInput = document.getElementById('monto_pendiente');
+
+            if (!opt || !opt.value) {
+                if (montoTotalInput) montoTotalInput.value = '';
+                if (montoPagadoInput) montoPagadoInput.value = '';
+                if (montoPendienteInput) montoPendienteInput.value = '';
+                return;
+            }
+
+            const montoTotal = parseFloat(opt.dataset.montoTotal || 0) || 0;
+            const montoPagado = parseFloat(opt.dataset.montoPagado || 0) || 0;
+            const montoPendiente = montoTotal - montoPagado;
+
+            if (montoTotalInput) montoTotalInput.value = `S/ ${montoTotal.toFixed(2)}`;
+            if (montoPagadoInput) montoPagadoInput.value = `S/ ${montoPagado.toFixed(2)}`;
+            if (montoPendienteInput) montoPendienteInput.value = `S/ ${montoPendiente.toFixed(2)}`;
+
+            console.log('select_deuda change ->', { montoTotal, montoPagado, montoPendiente });
         });
     }
     
@@ -975,12 +1019,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const fecha1 = document.getElementById('detalle_fecha_orden_1')?.value; // Ya viene en formato Y-m-d
                 const observaciones = document.getElementById('observaciones')?.value || '';
                 
-                // Validar que el primer detalle esté completo
-                if (!metodoPago1 || !numeroOperacion1 || !monto1 || !fecha1) {
-                    alert('Por favor complete todos los campos del primer detalle de pago.');
-                    return false;
-                }
-                
                 // Verificar si hay segundo detalle con datos
                 const metodoPago2 = document.getElementById('metodo_pago_orden_2')?.value;
                 const numeroOperacion2 = document.getElementById('detalle_recibo_orden_2')?.value;
@@ -1029,14 +1067,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     formData.append('voucher', voucherFile);
                 }
                 
-                console.log('📦 Datos a enviar:');
-                for (let pair of formData.entries()) {
-                    console.log(pair[0] + ':', pair[1]);
-                }
-                
                 // Enviar con fetch a la ruta correcta
                 const registerUrl = '/pagos/registrar-pago-orden';
-                console.log('🌐 Enviando a:', registerUrl);
                 
                 fetch(registerUrl, {
                     method: 'POST',
@@ -1046,7 +1078,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 })
                 .then(response => {
-                    console.log('📡 Respuesta del servidor:', response.status);
                     if (response.ok) {
                         return response.json().catch(() => {
                             // Si no es JSON, redirigir manualmente
@@ -1059,13 +1090,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 })
                 .then(data => {
-                    console.log('✅ Pago registrado exitosamente');
-                    // Redirigir al listado con mensaje de éxito
                     window.location.href = '/pagos?created=true';
                 })
                 .catch(error => {
-                    console.error('❌ Error al registrar pago:', error);
-                    
                     // Mostrar errores de validación si existen
                     if (error.errors) {
                         let mensajeError = 'Errores de validación:\n\n';
@@ -1080,11 +1107,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
                 
-                return false; // Prevenir submit por defecto
+                return false; 
             }
             
             // Si es deuda_individual, dejar que el form se envíe normalmente
-            console.log('✅ Enviando formulario normalmente (Deuda Individual)');
             return true;
         });
     }

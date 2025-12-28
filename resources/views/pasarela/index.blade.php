@@ -104,7 +104,11 @@
             <div class="row g-3">
                 <div class="col-6 col-md-3">
                     <div class="info-card yape">
-                        <i class="fab fa-app-store"></i>
+                        <div style="display: flex; gap: 10px; justify-content: center; align-items: center; margin-bottom: 1rem;">
+                            <img src="https://logosenvector.com/logo/img/yape-37283.png" alt="Yape" style="height: 40px; object-fit: contain;">
+                            <span style="font-size: 1.5rem; font-weight: 600; color: #722282;">/</span>
+                            <img src="https://marketingperu.beglobal.biz/wp-content/uploads/2024/09/logo-plin-fondo-transparente.png" alt="Plin" style="height: 40px; object-fit: contain;">
+                        </div>
                         <h6>Yape / Plin</h6>
                         <small>Pago instantáneo</small>
                     </div>
@@ -132,6 +136,7 @@
                 </div>
             </div>
         </div>
+        
 
         <!-- Help Section -->
         <div class="card mt-4">

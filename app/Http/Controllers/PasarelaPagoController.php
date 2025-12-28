@@ -34,6 +34,7 @@ class PasarelaPagoController extends Controller
             'alumno.matriculas.grado', 
             'matricula.grado', 
             'matricula.seccion',
+            'detalles.conceptoPago',
             'detalles.deuda.conceptoPago'
         ])
             ->where('codigo_orden', $codigo_orden)
@@ -60,6 +61,14 @@ class PasarelaPagoController extends Controller
 
         // Validar si la orden está vencida
         if ($orden->fecha_vencimiento < Carbon::now()) {
+            // Si la orden está vencida PERO tiene pagos parciales, permitir continuar pagando
+            if ($montoPagado > 0) {
+                // Mostrar advertencia pero permitir pago
+                return view('pasarela.orden', compact('orden', 'montoPagado', 'saldoPendiente'))
+                    ->with('advertencia_vencida', 'Esta orden de pago venció el ' . Carbon::parse($orden->fecha_vencimiento)->format('d/m/Y') . ', pero puede completar el pago del saldo pendiente.');
+            }
+            
+            // Si NO tiene pagos (orden vencida sin pagar), bloquear
             return view('pasarela.orden_vencida', compact('orden', 'montoPagado', 'saldoPendiente'));
         }
 

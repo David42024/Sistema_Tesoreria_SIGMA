@@ -59,7 +59,8 @@
 
                         <div class="grid grid-cols-1 lg:grid-cols-4 gap-3">
                             <div class="lg:col-span-3 flex flex-col">
-                                <input type="text" id="codigo_busqueda_unificado"
+                                <input type="text" id="codigo_busqueda_unificado" name="codigo_busqueda_unificado"
+                                    value="{{ old('codigo_busqueda_unificado', '') }}"
                                     class="w-full rounded-lg border-2 border-indigo-300 dark:border-indigo-600 px-4 py-3 text-sm text-gray-800 dark:text-white/90 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                                     placeholder="Ejemplo: 123456 (estudiante) o OP-2025-0032 (orden)">
                                 <p id="helper_busqueda" class="text-xs mt-1 text-gray-500 dark:text-gray-400">
@@ -211,10 +212,10 @@
                                             <div class="min-h-[20px]"></div>
                                         </div>
 
-                                        <!-- Código Estudiante -->
+                                        <!-- Código Educando -->
                                         <div class="flex flex-col">
                                             <label class="text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
-                                                Código Estudiante
+                                                Código Educando
                                             </label>
                                             <input type="text" id="info_codigo_estudiante_orden" readonly
                                                 class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-800 dark:text-white/90">
@@ -946,8 +947,10 @@
                                                         {{ $errors->has('detalle_fecha.0') ? 'border-red-500' : 'border-gray-300 dark:border-gray-700' }}
                                                         focus-within:ring-2 focus-within:ring-indigo-500">
 
-                                                        <input type="date" name="detalle_fecha[0]" id="detalle_fecha_1"
-                                                            value="{{ old('detalle_fecha.0', isset($data['detalle_existente']) ? $data['detalle_existente']->fecha_pago->format('Y-m-d') : '') }}"
+                                                        <input type="text" name="detalle_fecha[0]" id="detalle_fecha_1"
+                                                            value="{{ old('detalle_fecha.0', isset($data['detalle_existente']) ? $data['detalle_existente']->fecha_pago->format('d/m/Y') : '') }}"
+                                                            placeholder="DD/MM/YYYY"
+                                                            pattern="\d{2}/\d{2}/\d{4}"
                                                             class="w-full px-3 py-2.5 text-sm text-gray-800 dark:text-white/90 
                                                                 focus:outline-none rounded-l-lg bg-white dark:bg-gray-800"
                                                             @if(isset($data['modo_completar']) && $data['modo_completar']) readonly
@@ -977,7 +980,7 @@
                                                         <label class="text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                                                             Voucher <span class="text-gray-500 text-xs">(JPG, PNG, PDF)</span>
                                                         </label>
-                                                        <input type="file" name="voucher_path[]" id="voucher_path_1" class="hidden"
+                                                        <input type="file" name="voucher_path[0]" id="voucher_path_1" style="display: none;"
                                                             accept=".jpg,.jpeg,.png,.pdf">
                                                         <button type="button" id="btnUploadVoucher_1"
                                                             class="w-full flex items-center justify-center gap-2 px-3 py-2.5 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-indigo-500 dark:hover:border-indigo-400 transition">
@@ -1103,8 +1106,11 @@
                                                         {{ $errors->has('detalle_fecha.1') ? 'border-red-500' : 'border-gray-300 dark:border-gray-700' }}
                                                         focus-within:ring-2 focus-within:ring-indigo-500">
 
-                                                        <input type="date" name="detalle_fecha[1]" id="detalle_fecha_2"
-                                                            value="{{ old('detalle_fecha.1') }}" class="w-full px-3 py-2.5 text-sm text-gray-800 dark:text-white/90 
+                                                        <input type="text" name="detalle_fecha[1]" id="detalle_fecha_2"
+                                                            value="{{ old('detalle_fecha.1') }}"
+                                                            placeholder="DD/MM/YYYY"
+                                                            pattern="\d{2}/\d{2}/\d{4}"
+                                                            class="w-full px-3 py-2.5 text-sm text-gray-800 dark:text-white/90 
                                                                 focus:outline-none rounded-l-lg bg-white dark:bg-gray-800">
 
                                                         <span class="px-3 py-2.5 bg-gray-100 dark:bg-gray-800 border-l border-gray-300 dark:border-gray-700 
@@ -1136,7 +1142,7 @@
                                                     <label class="text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                                                         Voucher <span class="text-gray-500 text-xs">(JPG, PNG, PDF)</span>
                                                     </label>
-                                                    <input type="file" name="voucher_path[]" id="voucher_path_2" class="hidden"
+                                                    <input type="file" name="voucher_path[1]" id="voucher_path_2" style="display: none;"
                                                         accept=".jpg,.jpeg,.png,.pdf">
                                                     <button type="button" id="btnUploadVoucher_2"
                                                         class="w-full flex items-center justify-center gap-2 px-3 py-2.5 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-indigo-500 dark:hover:border-indigo-400 transition">
@@ -1172,12 +1178,33 @@
 
 @section('custom-js')
     <script>
-        // URLs de Laravel para JavaScript
         window.Laravel = window.Laravel || {};
         window.Laravel.routes = {
             buscarOrden: "{{ route('pago_buscar_orden', ['codigo_orden' => 'PLACEHOLDER']) }}".replace('PLACEHOLDER', ''),
             registrarPagoOrden: "{{ route('pago_registrar_pago_orden') }}"
         };
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const oldTipo = @json(old('tipo_pago'));
+            const oldIdDeuda = @json(old('id_deuda'));
+            const oldCodigoBusqueda = @json(old('codigo_busqueda_unificado'));
+
+            if (oldTipo) {
+                const tipoContainer = document.getElementById('tipo_pago_container');
+                if (tipoContainer) tipoContainer.classList.remove('hidden');
+
+                const radio = document.querySelector(`input[name="tipo_pago_selector"][value="${oldTipo}"]`);
+                if (radio) radio.checked = true;
+
+                const tipoHidden = document.getElementById('tipo_pago_hidden');
+                if (tipoHidden) tipoHidden.value = oldTipo;
+
+                setTimeout(function() {
+                    if (radio) radio.dispatchEvent(new Event('change'));
+                }, 250);
+            }
+        });
     </script>
     <script src="{{ asset('js/busqueda-unificada-pago.js') }}?v={{ time() }}"></script>
     <script src="{{ asset('js/pago-create-1.js') }}?v={{ time() }}"></script>

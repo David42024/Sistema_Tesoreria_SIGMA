@@ -4,11 +4,11 @@
 >
   <!-- SIDEBAR HEADER -->
   <div
-    :class="sidebarToggle ? 'justify-center' : 'justify-between'"
+    :class="sidebarToggle ? 'justify-between lg:justify-center pt-20 lg:pt-8' : 'justify-between'"
     class="flex items-center gap-2 pt-8 sidebar-header pb-7"
   >
-    <a href="/">
-      <span class="logo" :class="sidebarToggle ? 'hidden' : ''">
+    <a href="/" class="flex items-center">
+      <span class="logo" :class="sidebarToggle ? 'lg:hidden' : ''">
         <img class="dark:hidden" src="{{ asset('images/colegio_sigma_logo.svg')}}" alt="Logo" />
         <img
           class="hidden dark:block"
@@ -19,7 +19,7 @@
 
       <img
         class="logo-icon"
-        :class="sidebarToggle ? 'lg:block' : 'hidden'"
+        :class="sidebarToggle ? 'hidden lg:block' : 'hidden'"
         src="{{ asset('images/sigma_logo.png') }}"
         alt="Logo"
       />

@@ -149,7 +149,7 @@ class PagoController extends Controller
                 $observaciones,
                 $cantidadDetalles,
                 $montoAPagar,
-                $tieneDetallesRechazados,  // [8] para ícono de advertencia
+                $tieneDetallesRechazados, 
             ]);
         }
 
@@ -180,9 +180,9 @@ class PagoController extends Controller
             'codigo_alumno' => 'required|string',
             'id_deuda' => 'required|exists:deudas,id_deuda',
         ], [
-            'codigo_alumno.required' => 'Ingrese el cÃ³digo del estudiante.',
+            'codigo_alumno.required' => 'Ingrese el código del estudiante.',
             'id_deuda.required' => 'Seleccione una deuda.',
-            'id_deuda.exists' => 'La deuda seleccionada no es vÃ¡lida.',
+            'id_deuda.exists' => 'La deuda seleccionada no es válida.',
         ]);
 
         $metodoPago = $request->input('metodo_pago', []);
@@ -288,17 +288,17 @@ class PagoController extends Controller
             $fecha = $detalleFecha[$index] ?? null;
 
             if (empty($metodo)) {
-                $errors["metodo_pago.{$index}"] = "Seleccione un mÃ©todo de pago para el detalle " . ($index + 1) . ".";
+                $errors["metodo_pago.{$index}"] = "Seleccione un método de pago para el detalle " . ($index + 1) . ".";
             }
 
             if (empty($recibo)) {
-                $errors["detalle_recibo.{$index}"] = "Ingrese el nÃºmero de operaciÃ³n para el detalle " . ($index + 1) . ".";
+                $errors["detalle_recibo.{$index}"] = "Ingrese el número de operación para el detalle " . ($index + 1) . ".";
             }
 
             if (empty($monto)) {
                 $errors["detalle_monto.{$index}"] = "Ingrese el monto para el detalle " . ($index + 1) . ".";
             } elseif (!is_numeric($monto)) {
-                $errors["detalle_monto.{$index}"] = "El monto del detalle " . ($index + 1) . " debe ser numÃ©rico.";
+                $errors["detalle_monto.{$index}"] = "El monto del detalle " . ($index + 1) . " debe ser numérico.";
             } elseif (floatval($monto) <= 0) {
                 $errors["detalle_monto.{$index}"] = "El monto del detalle " . ($index + 1) . " debe ser mayor a 0.";
             }
@@ -306,7 +306,7 @@ class PagoController extends Controller
             if (empty($fecha)) {
                 $errors["detalle_fecha.{$index}"] = "Ingrese la fecha para el detalle " . ($index + 1) . ".";
             } elseif (!strtotime($fecha)) {
-                $errors["detalle_fecha.{$index}"] = "La fecha del detalle " . ($index + 1) . " no es vÃ¡lida.";
+                $errors["detalle_fecha.{$index}"] = "La fecha del detalle " . ($index + 1) . " no es válida.";
             }
         }
         
@@ -315,7 +315,7 @@ class PagoController extends Controller
             
             if (in_array($metodo, ['transferencia', 'yape', 'plin'])) {
                 if (!$request->hasFile("voucher_path.$index")) {
-                    $errors["voucher_path.{$index}"] = "Debe subir la constancia de pago para el mÃ©todo: " . ucfirst($metodo) . ".";
+                    $errors["voucher_path.{$index}"] = "Debe subir la constancia de pago para el método: " . ucfirst($metodo) . ".";
                 }
             }
         }
@@ -967,6 +967,37 @@ class PagoController extends Controller
             ], 404);
         }
 
+        // Verificar si la orden está vencida
+        $fechaActual = Carbon::now()->startOfDay();
+        $fechaVencimiento = Carbon::parse($ultimaOrden->fecha_vencimiento)->startOfDay();
+
+        if ($fechaActual->greaterThan($fechaVencimiento)) {
+            // Verificar si la orden tiene algún pago realizado
+            $pagosRealizados = Pago::where('id_orden', $ultimaOrden->id_orden)
+                ->where('estado', 1)
+                ->sum('monto');
+
+            // Si NO tiene pagos, bloquear (orden vencida sin pagar)
+            if ($pagosRealizados == 0) {
+                return response()->json([
+                    'success' => false,
+                    'orden_vencida' => true,
+                    'alumno' => [
+                        'codigo_educando' => $alumno->codigo_educando,
+                        'nombre_completo' => trim($alumno->apellido_paterno . ' ' . $alumno->apellido_materno . ' ' . $alumno->primer_nombre)
+                    ],
+                    'orden' => [
+                        'codigo_orden' => $ultimaOrden->codigo_orden,
+                        'fecha_vencimiento' => $fechaVencimiento->format('d/m/Y')
+                    ],
+                    'message' => 'La orden de pago ' . $ultimaOrden->codigo_orden . ' venció el ' . $fechaVencimiento->format('d/m/Y') . ' y no tiene ningún pago registrado. Por favor, genere una nueva orden de pago actualizada.'
+                ], 400);
+            }
+            
+            // Si tiene pagos parciales, permitir continuar pagando
+            // (El flujo continúa normalmente)
+        }
+
         $idsDeudas = \DB::table('detalle_orden_pago')
             ->where('id_orden', $ultimaOrden->id_orden)
             ->pluck('id_deuda')
@@ -1567,6 +1598,42 @@ class PagoController extends Controller
                     'success' => false,
                     'message' => 'Esta orden ya ha sido pagada o está anulada.'
                 ], 400);
+            }
+
+            // Calcular cuánto se ha pagado ANTES de verificar vencimiento
+            $pagosRealizados = Pago::where('id_orden', $orden->id_orden)
+                ->where('estado', 1)
+                ->sum('monto');
+
+            // Verificar si la orden está vencida
+            $fechaActual = Carbon::now()->startOfDay();
+            $fechaVencimiento = Carbon::parse($orden->fecha_vencimiento)->startOfDay();
+
+            if ($fechaActual->greaterThan($fechaVencimiento)) {
+                // Si NO tiene pagos, bloquear (orden vencida sin pagar)
+                if ($pagosRealizados == 0) {
+                    return response()->json([
+                        'success' => false,
+                        'orden_vencida' => true,
+                        'alumno' => [
+                            'codigo_educando' => $orden->alumno->codigo_educando ?? '-',
+                            'nombre_completo' => trim(
+                                ($orden->alumno->primer_nombre ?? '') . ' ' .
+                                ($orden->alumno->otros_nombres ?? '') . ' ' .
+                                ($orden->alumno->apellido_paterno ?? '') . ' ' .
+                                ($orden->alumno->apellido_materno ?? '')
+                            )
+                        ],
+                        'orden' => [
+                            'codigo_orden' => $orden->codigo_orden,
+                            'fecha_vencimiento' => $fechaVencimiento->format('d/m/Y')
+                        ],
+                        'message' => 'La orden de pago ' . $orden->codigo_orden . ' venció el ' . $fechaVencimiento->format('d/m/Y') . ' y no tiene ningún pago registrado. Por favor, genere una nueva orden de pago actualizada.'
+                    ], 400);
+                }
+                
+                // Si tiene pagos parciales, permitir continuar pagando
+                // (El flujo continúa normalmente)
             }
 
             // Calcular el monto total de la orden

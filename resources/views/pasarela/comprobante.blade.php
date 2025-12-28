@@ -304,71 +304,76 @@ function descargarVoucherPNG() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generando...';
     btn.disabled = true;
 
-    // Cargar el voucher via fetch
-    const voucherURL = "{{ route('pasarela.voucher.html', $transaccion->id_transaccion) }}";
-    
-    fetch(voucherURL)
-        .then(response => response.text())
-        .then(html => {
-            // Crear un contenedor temporal oculto
-            const tempContainer = document.createElement('div');
-            tempContainer.style.position = 'fixed';
-            tempContainer.style.left = '-9999px';
-            tempContainer.style.top = '0';
-            tempContainer.innerHTML = html;
-            document.body.appendChild(tempContainer);
+    // Crear iframe completamente oculto
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position: fixed; left: -99999px; top: -99999px; width: 650px; height: 1000px; border: none; visibility: hidden; opacity: 0;';
+    iframe.src = "{{ route('pasarela.voucher.html', $transaccion->id_transaccion) }}";
+    document.body.appendChild(iframe);
 
-            // Esperar a que se renderice
-            setTimeout(() => {
-                const voucherElement = tempContainer.querySelector('.voucher-container');
-                
-                if (voucherElement) {
-                    html2canvas(voucherElement, {
-                        scale: 2,
-                        backgroundColor: '#ffffff',
-                        logging: false,
-                        useCORS: true,
-                        allowTaint: true
-                    }).then(canvas => {
-                        // Convertir canvas a blob y descargar
-                        canvas.toBlob(function(blob) {
-                            const url = URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            link.href = url;
-                            link.download = 'voucher_{{ $transaccion->numero_operacion }}.png';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            URL.revokeObjectURL(url);
-                            
-                            // Limpiar
-                            document.body.removeChild(tempContainer);
-                            
-                            // Restaurar botón
-                            btn.innerHTML = originalHTML;
-                            btn.disabled = false;
-                        });
-                    }).catch(error => {
-                        console.error('Error al generar PNG:', error);
-                        alert('Error al generar la imagen. Por favor, intenta nuevamente.');
-                        document.body.removeChild(tempContainer);
+    // Esperar a que el iframe cargue completamente
+    iframe.onload = function() {
+        try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            const voucherElement = iframeDoc.querySelector('.voucher-container');
+            
+            if (voucherElement) {
+                // Capturar el voucher desde el iframe
+                html2canvas(voucherElement, {
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: true,
+                    width: voucherElement.scrollWidth,
+                    height: voucherElement.scrollHeight
+                }).then(canvas => {
+                    // Convertir canvas a blob y descargar
+                    canvas.toBlob(function(blob) {
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = 'voucher_{{ $transaccion->numero_operacion }}.png';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                        
+                        // Limpiar iframe
+                        document.body.removeChild(iframe);
+                        
+                        // Restaurar botón
                         btn.innerHTML = originalHTML;
                         btn.disabled = false;
                     });
-                } else {
-                    alert('No se pudo cargar el voucher. Por favor, intenta nuevamente.');
-                    document.body.removeChild(tempContainer);
+                }).catch(error => {
+                    console.error('Error al generar PNG:', error);
+                    alert('Error al generar la imagen. Por favor, intenta nuevamente.');
+                    document.body.removeChild(iframe);
                     btn.innerHTML = originalHTML;
                     btn.disabled = false;
-                }
-            }, 500);
-        })
-        .catch(error => {
-            console.error('Error al cargar voucher:', error);
-            alert('Error al cargar el voucher. Por favor, intenta nuevamente.');
+                });
+            } else {
+                alert('No se pudo cargar el voucher. Por favor, intenta nuevamente.');
+                document.body.removeChild(iframe);
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        } catch(error) {
+            console.error('Error al acceder al iframe:', error);
+            alert('Error al procesar el voucher. Por favor, intenta nuevamente.');
+            document.body.removeChild(iframe);
             btn.innerHTML = originalHTML;
             btn.disabled = false;
-        });
+        }
+    };
+
+    // Manejar error de carga
+    iframe.onerror = function() {
+        alert('Error al cargar el voucher. Por favor, intenta nuevamente.');
+        document.body.removeChild(iframe);
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+    };
 }
 </script>
 </script>

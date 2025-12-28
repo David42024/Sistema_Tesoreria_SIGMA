@@ -47,6 +47,32 @@ class ValidacionPagoController extends Controller
             $query = ValidacionPagoController::doSearch($sqlColumns, $search, $maxEntriesShow);
         }
 
+        // Obtener estadísticas de validación basadas en DetallesPago
+        $totalDetalles = DetallePago::whereHas('pago', function($query) {
+            $query->where('estado', '=', '1');
+        })->where('estado', 1)->count();
+        
+        $detallesValidados = DetallePago::whereHas('pago', function($query) {
+            $query->where('estado', '=', '1');
+        })->where('estado', 1)
+          ->where('estado_validacion', 'validado')
+          ->count();
+        
+        $detallesPendientes = DetallePago::whereHas('pago', function($query) {
+            $query->where('estado', '=', '1');
+        })->where('estado', 1)
+          ->where(function($query) {
+              $query->where('estado_validacion', 'pendiente')
+                    ->orWhereNull('estado_validacion');
+          })
+          ->count();
+        
+        $detallesRechazados = DetallePago::whereHas('pago', function($query) {
+            $query->where('estado', '=', '1');
+        })->where('estado', 1)
+          ->where('estado_validacion', 'rechazado')
+          ->count();
+
         $data = [
             'titulo' => 'Validación de Pagos',
             'columnas' => [
@@ -55,6 +81,7 @@ class ValidacionPagoController extends Controller
                 'Nombre del Alumno',
                 'Fecha de Pago',
                 'Monto',
+                'Comprobantes',
                 'Observaciones'
             ],
             'filas' => [],
@@ -64,6 +91,10 @@ class ValidacionPagoController extends Controller
             'resource' => $resource,
             'view' => 'validacion_pago_view',
             'ia_activa' => $ia_activa,
+            'total_detalles' => $totalDetalles,
+            'detalles_validados' => $detallesValidados,
+            'detalles_pendientes' => $detallesPendientes,
+            'detalles_rechazados' => $detallesRechazados,
         ];
 
         // Procesar cada pago y construir las filas
@@ -124,6 +155,30 @@ class ValidacionPagoController extends Controller
             $tieneDetallesRechazados = $pago->detallesPago()
                 ->where('estado_validacion', 'rechazado')
                 ->exists();
+            
+            // Analizar DetallesPago para mostrar progreso de validación
+            $detallesPago = $pago->detallesPago()->where('estado', 1)->get();
+            $totalDetalles = $detallesPago->count();
+            
+            $detallesValidados = $detallesPago->where('estado_validacion', 'validado')->count();
+            $detallesRechazados = $detallesPago->where('estado_validacion', 'rechazado')->count();
+            $detallesPendientes = $detallesPago->filter(function($detalle) {
+                return $detalle->estado_validacion === 'pendiente' || is_null($detalle->estado_validacion);
+            })->count();
+            
+            // Construir mensaje de estado basado en detalles
+            if ($totalDetalles === 0) {
+                $estadoValidacion = 'Sin comprobantes|0|0|0|0';
+            } else {
+                // Formato: EstadoPrincipal|Total|Validados|Rechazados|Pendientes
+                if ($detallesValidados === $totalDetalles) {
+                    $estadoValidacion = "Completo|{$totalDetalles}|{$detallesValidados}|{$detallesRechazados}|{$detallesPendientes}";
+                } elseif ($detallesRechazados > 0) {
+                    $estadoValidacion = "Rechazado|{$totalDetalles}|{$detallesValidados}|{$detallesRechazados}|{$detallesPendientes}";
+                } else {
+                    $estadoValidacion = "Pendiente|{$totalDetalles}|{$detallesValidados}|{$detallesRechazados}|{$detallesPendientes}";
+                }
+            }
 
             array_push($data['filas'], [
                 $pago->id_pago,
@@ -131,6 +186,7 @@ class ValidacionPagoController extends Controller
                 $alumno,
                 $fechaPago,
                 number_format($pago->monto, 2),
+                $estadoValidacion,
                 $observaciones,
                 $cantidadDetalles,
                 $montoAPagar,
@@ -337,8 +393,33 @@ class ValidacionPagoController extends Controller
                 $detalle->save();
             }
 
+            // Buscar transacción en pasarela para verificar autenticidad
+            $transaccionPasarela = null;
+            if ($detalle->nro_recibo) {
+                $transaccionPasarela = \App\Models\TransaccionPasarela::where('numero_operacion', $detalle->nro_recibo)
+                    ->where('metodo_pago', $detalle->metodo_pago)
+                    ->first();
+            }
+
+            // Preparar datos adicionales para el análisis
+            $datosAdicionales = [
+                'numero_operacion' => $detalle->nro_recibo,
+                'metodo_pago' => $detalle->metodo_pago,
+                'tiene_transaccion_pasarela' => !is_null($transaccionPasarela),
+            ];
+            
+            if ($transaccionPasarela) {
+                $datosAdicionales['transaccion_monto'] = floatval($transaccionPasarela->monto);
+                $datosAdicionales['transaccion_fecha'] = Carbon::parse($transaccionPasarela->fecha_transaccion)->format('d/m/Y');
+            }
+
             $groqService = new GroqService();
-            $resultado = $groqService->analizarVoucher($textoVoucher, floatval($detalle->monto), Carbon::parse($detalle->fecha_pago)->format('d/m/Y'));
+            $resultado = $groqService->analizarVoucher(
+                $textoVoucher, 
+                floatval($detalle->monto), 
+                Carbon::parse($detalle->fecha_pago)->format('d/m/Y'),
+                $datosAdicionales
+            );
             $resultado['texto'] = $textoVoucher;
             
             return $resultado;

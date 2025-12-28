@@ -188,22 +188,22 @@
     <div class="voucher-container voucher-{{ $metodo }}">
         <!-- Header -->
         <div class="header">
-            <div class="logo">
-                @if($metodo == 'yape')
-                    YAPE
-                @elseif($metodo == 'plin')
-                    PLIN
-                @elseif($metodo == 'transferencia')
-                    {{ strtoupper($datos_adicionales['banco'] ?? 'BANCO') }}
-                @elseif($metodo == 'tarjeta')
-                    VISA/MASTERCARD
-                @elseif($metodo == 'paypal')
-                    PayPal
-                @endif
-            </div>
+            @if($metodo == 'yape')
+                <img src="https://i.postimg.cc/0NXYG6gD/logo-Yape.png" alt="Yape" style="height: 60px; margin-bottom: 10px;">
+            @elseif($metodo == 'plin')
+                <img src="https://marketingperu.beglobal.biz/wp-content/uploads/2024/09/logo-plin-fondo-transparente.png" alt="Plin" style="height: 60px; margin-bottom: 10px;">
+            @else
+                <div class="logo">
+                    @if($metodo == 'transferencia')
+                        {{ strtoupper($datos_adicionales['banco'] ?? 'BANCO') }}
+                    @elseif($metodo == 'tarjeta')
+                        VISA/MASTERCARD
+                    @elseif($metodo == 'paypal')
+                        PayPal
+                    @endif
+                </div>
+            @endif
             <div class="subtitle">Comprobante de Operación</div>
-            
-            <div class="check-icon">✓</div>
         </div>
 
         <!-- Content -->

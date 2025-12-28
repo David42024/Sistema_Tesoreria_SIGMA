@@ -151,6 +151,30 @@ class AppServiceProvider extends ServiceProvider
                 'view' => ['Familiar'],
                 'create' => ['Familiar'],
             ],
+            'academica' => [
+                'view' => ['Familiar'],
+            ],
+            'alumnos' => [
+                'view' => ['Familiar'],
+            ],
+            'personal' => [
+                'view' => ['Familiar'],
+            ],
+            'administrativa' => [
+                'view' => ['Familiar'],
+            ],
+            'financiera' => [
+                'view' => ['Familiar'],
+                'create' => ['Familiar'],
+                'view_details' => ['Familiar'],
+            ],
+            'reportes' => [
+                'view' => ['Familiar'],
+            ],
+            'orden_pago' => [
+                'view' => ['Familiar'],
+                'create' => ['Familiar'],
+            ],
         ]]);
     }
 

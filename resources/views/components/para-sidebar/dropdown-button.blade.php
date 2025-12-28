@@ -16,7 +16,7 @@
 
 <!-- Menu Item Dashboard -->
 <li>
-    <a href="#" @click.prevent="selected = (selected === '{{ $dropdownName }}' ? '':'{{ $dropdownName }}')" class="menu-item group" :class=" (selected === '{{ $dropdownName }}') || {{ $forSelectedItems }} ? 'menu-item-active' : 'menu-item-inactive'">
+    <a href="#" id="menu-{{ Str::slug($dropdownName) }}" @click.prevent="selected = (selected === '{{ $dropdownName }}' ? '':'{{ $dropdownName }}')" class="menu-item group" :class=" (selected === '{{ $dropdownName }}') || {{ $forSelectedItems }} ? 'menu-item-active' : 'menu-item-inactive'">
         <svg :class="(selected === 'Dashboard') || (page === 'ecommerce' || page === 'analytics' || page === 'marketing' || page === 'crm' || page === 'stocks') ? 'menu-item-icon-active' : 'menu-item-icon-inactive'" width="24"
             height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         
@@ -43,7 +43,7 @@
         <ul :class="sidebarToggle ? 'lg:hidden' : 'flex'" class="flex flex-col gap-1 mt-2 menu-dropdown pl-9">
             @foreach ($items as $item)
                 <li>
-                    <a href="{{ route($links[$item] ?? 'principal')}}" class="menu-dropdown-item group" :class="page === '{{ $item }}' ? 'menu-dropdown-item-active' : 'menu-dropdown-item-inactive'">
+                    <a href="{{ route($links[$item] ?? 'principal')}}" id="submenu-{{ Str::slug($item) }}" class="menu-dropdown-item group" :class="page === '{{ $item }}' ? 'menu-dropdown-item-active' : 'menu-dropdown-item-inactive'">
                         {{ $item }}
                     </a>
                 </li>

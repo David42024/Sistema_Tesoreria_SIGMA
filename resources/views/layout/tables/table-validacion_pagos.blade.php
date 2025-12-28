@@ -1,6 +1,65 @@
 <div
     class="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
 
+    <!-- Estadísticas de Validación por Comprobantes -->
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-blue-600 dark:text-blue-400">Total Comprobantes</p>
+                    <p class="text-2xl font-bold text-blue-900 dark:text-blue-100 mt-1">{{ $total_detalles }}</p>
+                </div>
+                <div class="bg-blue-200 dark:bg-blue-800 rounded-full p-3">
+                    <svg class="w-6 h-6 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-green-600 dark:text-green-400">Validados</p>
+                    <p class="text-2xl font-bold text-green-900 dark:text-green-100 mt-1">{{ $detalles_validados }}</p>
+                </div>
+                <div class="bg-green-200 dark:bg-green-800 rounded-full p-3">
+                    <svg class="w-6 h-6 text-green-600 dark:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-yellow-600 dark:text-yellow-400">Pendientes</p>
+                    <p class="text-2xl font-bold text-yellow-900 dark:text-yellow-100 mt-1">{{ $detalles_pendientes }}</p>
+                </div>
+                <div class="bg-yellow-200 dark:bg-yellow-800 rounded-full p-3">
+                    <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-lg p-4 border border-red-200 dark:border-red-800">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-red-600 dark:text-red-400">Rechazados</p>
+                    <p class="text-2xl font-bold text-red-900 dark:text-red-100 mt-1">{{ $detalles_rechazados }}</p>
+                </div>
+                <div class="bg-red-200 dark:bg-red-800 rounded-full p-3">
+                    <svg class="w-6 h-6 text-red-600 dark:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
@@ -100,9 +159,43 @@
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                         @for($i = 0; $i < count($columnas); $i++)
                             <td class="py-3 px-2">
-                                <p data-order="{{ $i }}" class="row{{ $fila[0] }} text-gray-600 text-theme-sm dark:text-gray-400">
-                                    {{ $fila[$i] }}
-                                </p>
+                                @if($i == 5)
+                                    {{-- Columna de Comprobantes con progreso de validación --}}
+                                    @php
+                                        $estadoData = explode('|', $fila[$i]);
+                                        $estadoPrincipal = $estadoData[0];
+                                        $total = $estadoData[1] ?? 0;
+                                        $validados = $estadoData[2] ?? 0;
+                                        $rechazados = $estadoData[3] ?? 0;
+                                        $pendientes = $estadoData[4] ?? 0;
+                                        
+                                        if ($estadoPrincipal === 'Sin comprobantes') {
+                                            $badgeClass = 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800';
+                                            $textoEstado = 'Sin comprobantes';
+                                            $iconoEstado = '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>';
+                                        } elseif ($estadoPrincipal === 'Completo') {
+                                            $badgeClass = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800';
+                                            $textoEstado = "{$validados}/{$total} Validados";
+                                            $iconoEstado = '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>';
+                                        } elseif ($estadoPrincipal === 'Rechazado') {
+                                            $badgeClass = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800';
+                                            $textoEstado = "{$rechazados} Rechazado" . ($rechazados > 1 ? 's' : '') . " ({$validados}/{$total})";
+                                            $iconoEstado = '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293z" clip-rule="evenodd"/></svg>';
+                                        } else { // Pendiente
+                                            $badgeClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800';
+                                            $textoEstado = "Pendiente ({$validados}/{$total})";
+                                            $iconoEstado = '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>';
+                                        }
+                                    @endphp
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border {{ $badgeClass }}">
+                                        {!! $iconoEstado !!}
+                                        {{ $textoEstado }}
+                                    </span>
+                                @else
+                                    <p data-order="{{ $i }}" class="row{{ $fila[0] }} text-gray-600 text-theme-sm dark:text-gray-400">
+                                        {{ $fila[$i] }}
+                                    </p>
+                                @endif
                             </td>
                         @endfor
 

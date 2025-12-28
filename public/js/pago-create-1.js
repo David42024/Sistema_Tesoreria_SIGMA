@@ -111,13 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // Abrir selector de archivo
-            if (v.voucherBtn && v.voucherInput) {
-                v.voucherBtn.addEventListener('click', function() {
-                    v.voucherInput.click();
-                });
-            }
-
             // Actualizar label con nombre del archivo
             if (v.voucherInput && v.voucherLabel) {
                 v.voucherInput.addEventListener('change', function() {
@@ -129,6 +122,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             }
+
+            // Abrir selector de archivo (asignar directamente para sobrescribir duplicados)
+            if (v.voucherBtn && v.voucherInput) {
+                v.voucherBtn.onclick = function() {
+                    v.voucherInput.click();
+                    return false;
+                };
+            }
         });
     }
 
@@ -139,10 +140,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const montoPendiente = document.getElementById('monto_pendiente');
 
         if (montoTotal && montoPagado && montoPendiente) {
-            const total = parseFloat(montoTotal.value) || 0;
-            const pagado = parseFloat(montoPagado.value) || 0;
+            // Los campos pueden venir con formato "S/ 123.45" -> eliminar caracteres no numéricos
+            const parseMonto = (v) => {
+                if (!v && v !== 0) return 0;
+                const cleaned = String(v).replace(/[^0-9.]/g, '');
+                return parseFloat(cleaned) || 0;
+            };
+
+            const total = parseMonto(montoTotal.value);
+            const pagado = parseMonto(montoPagado.value);
             const pendiente = total - pagado;
-            
+
             montoPendiente.value = `S/ ${pendiente.toFixed(2)}`;
         }
     }
@@ -155,9 +163,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!montoTotalInput || !monto1Input || !monto2Input) return;
 
-        const montoTotal = parseFloat(montoTotalInput.value) || 0;
-        const monto1 = parseFloat(monto1Input.value) || 0;
-        const monto2 = parseFloat(monto2Input.value) || 0;
+        const parseMonto = (v) => {
+            if (!v && v !== 0) return 0;
+            const cleaned = String(v).replace(/[^0-9.]/g, '');
+            return parseFloat(cleaned) || 0;
+        };
+
+        const montoTotal = parseMonto(montoTotalInput.value);
+        const monto1 = parseMonto(monto1Input.value);
+        const monto2 = parseMonto(monto2Input.value);
 
         // Calcular resto disponible para cada input
         const restoParaMonto1 = montoTotal - monto2;
@@ -258,6 +272,59 @@ document.addEventListener('DOMContentLoaded', () => {
         monto2Input.addEventListener('blur', function() {
             formatearMonto(this);
             validarMontos();
+        });
+    }
+
+    // Formatear inputs de fecha DD/MM/YYYY
+    function formatearFecha(input) {
+        let valor = input.value.replace(/\D/g, ''); // Solo números
+        
+        if (valor.length >= 2) {
+            valor = valor.substring(0, 2) + '/' + valor.substring(2);
+        }
+        if (valor.length >= 5) {
+            valor = valor.substring(0, 5) + '/' + valor.substring(5, 9);
+        }
+        
+        input.value = valor;
+    }
+
+    const fecha1Input = document.getElementById('detalle_fecha_1');
+    const fecha2Input = document.getElementById('detalle_fecha_2');
+
+    if (fecha1Input) {
+        fecha1Input.addEventListener('input', function() {
+            formatearFecha(this);
+        });
+    }
+
+    if (fecha2Input) {
+        fecha2Input.addEventListener('input', function() {
+            formatearFecha(this);
+        });
+    }
+
+    // Convertir fechas DD/MM/YYYY a YYYY-MM-DD antes de enviar el formulario
+    const formulario = document.querySelector('form[action*="pago"]');
+    if (formulario) {
+        formulario.addEventListener('submit', function(e) {
+            // Convertir fecha 1
+            if (fecha1Input && fecha1Input.value) {
+                const partes1 = fecha1Input.value.split('/');
+                if (partes1.length === 3) {
+                    const fechaISO1 = `${partes1[2]}-${partes1[1]}-${partes1[0]}`;
+                    fecha1Input.value = fechaISO1;
+                }
+            }
+            
+            // Convertir fecha 2
+            if (fecha2Input && fecha2Input.value) {
+                const partes2 = fecha2Input.value.split('/');
+                if (partes2.length === 3) {
+                    const fechaISO2 = `${partes2[2]}-${partes2[1]}-${partes2[0]}`;
+                    fecha2Input.value = fechaISO2;
+                }
+            }
         });
     }
 });

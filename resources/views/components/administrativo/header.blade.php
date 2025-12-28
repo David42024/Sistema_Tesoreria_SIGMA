@@ -608,6 +608,7 @@
         @click.outside="dropdownOpen = false"
       >
         <a
+          id="btn-dropdown-usuario"
           class="flex items-center text-gray-700 dark:text-gray-400"
           href="#"
           @click.prevent="dropdownOpen = ! dropdownOpen"
@@ -743,7 +744,7 @@
           </ul>
 
           <form class="hidden" action="/logout" method="GET" id="logout"></form>
-          <button type="submit" form="logout"
+          <button type="submit" form="logout" id="btn-cerrar-sesion"
             class="group text-theme-sm mt-3 flex items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
           >
             <svg
@@ -771,3 +772,27 @@
     </div>
   </div>
 </header>
+
+<script>
+  // Script para detectar logout normal y limpiar localStorage de la guía
+  document.addEventListener('DOMContentLoaded', function() {
+    const btnCerrarSesion = document.getElementById('btn-cerrar-sesion');
+    if (btnCerrarSesion) {
+      btnCerrarSesion.addEventListener('click', function(e) {
+        // Verificar si hay guía activa
+        const guiaActiva = localStorage.getItem('guiaPagosActiva');
+        const pasoActual = localStorage.getItem('guiaPasoActual');
+        
+        // Si NO está en modo guía de pagar, limpiar localStorage
+        if (guiaActiva !== 'true' || pasoActual !== 'pagarEnLinea') {
+          localStorage.removeItem('guiaPagosActiva');
+          localStorage.removeItem('guiaPasoActual');
+          localStorage.removeItem('guiaPasoPagar');
+          console.log('Logout normal - localStorage de guía limpiado');
+        } else {
+          console.log('Logout desde guía - manteniendo localStorage');
+        }
+      });
+    }
+  });
+</script>

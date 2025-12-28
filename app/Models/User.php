@@ -9,14 +9,8 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'username',
         'tipo',
@@ -26,25 +20,42 @@ class User extends Authenticatable
 
     protected $primaryKey = 'id_usuario';
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'password' => 'hashed',
         ];
+    }
+
+    public function administrativo()
+    {
+        return $this->hasOne(Administrativo::class, 'id_usuario', 'id_usuario');
+    }
+
+    public function personal()
+    {
+        return $this->hasOne(Personal::class, 'id_usuario', 'id_usuario');
+    }
+
+    public function getNameAttribute()
+    {
+        if ($this->tipo === 'administrativo' && $this->administrativo) {
+            return trim($this->administrativo->primer_nombre . ' ' . 
+                       ($this->administrativo->otros_nombres ?? '') . ' ' .
+                       $this->administrativo->apellido_paterno . ' ' .
+                       $this->administrativo->apellido_materno);
+        } elseif ($this->tipo === 'personal' && $this->personal) {
+            return trim($this->personal->primer_nombre . ' ' . 
+                       ($this->personal->otros_nombres ?? '') . ' ' .
+                       $this->personal->apellido_paterno . ' ' .
+                       $this->personal->apellido_materno);
+        }
+        
+        return ucwords(str_replace('_', ' ', $this->username));
     }
 }

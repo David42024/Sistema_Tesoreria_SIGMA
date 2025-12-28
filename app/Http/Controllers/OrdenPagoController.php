@@ -9,6 +9,7 @@ use App\Models\Deuda;
 use App\Models\Matricula;
 use App\Models\ConceptoPago;
 use App\Models\Politica;
+use App\Models\Pago;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -128,17 +129,22 @@ class OrdenPagoController extends Controller
             ], 404);
         }
 
-        $matricula = Matricula::where('id_alumno', $alumno->id_alumno)
+        // Buscar todas las matrículas activas del alumno, ordenadas por año escolar descendente
+        $todasMatriculas = Matricula::where('id_alumno', $alumno->id_alumno)
             ->where('estado', true)
             ->with(['grado.niveleducativo', 'seccion'])
-            ->first();
+            ->orderBy('año_escolar', 'desc')
+            ->get();
 
-        if (!$matricula) {
+        if ($todasMatriculas->isEmpty()) {
             return response()->json([
                 'success' => false,
                 'error' => 'Alumno sin matrícula activa. Por favor, registre una matrícula para este alumno.'
             ], 404);
         }
+
+        // Iniciar con la matrícula más reciente
+        $matricula = $todasMatriculas->first();
 
         $hoy = Carbon::now();
         $mesActual = Carbon::now()->month;
@@ -150,43 +156,87 @@ class OrdenPagoController extends Controller
             'SETIEMBRE' => 9, 'OCTUBRE' => 10, 'NOVIEMBRE' => 11, 'DICIEMBRE' => 12
         ];
         
-        // Verificar si hay una orden pendiente que aún no ha vencido
-        $ordenReciente = OrdenPago::where('id_alumno', $alumno->id_alumno)
+        // Verificar si hay una orden pendiente (vigente o vencida con deuda)
+        $ordenPendiente = OrdenPago::where('id_alumno', $alumno->id_alumno)
             ->where('estado', 'pendiente')
-            ->where('fecha_vencimiento', '>=', $hoy)
             ->orderBy('fecha_orden_pago', 'desc')
             ->first();
         
-        if ($ordenReciente) {
-            $fechaVencimiento = Carbon::parse($ordenReciente->fecha_vencimiento);
+        if ($ordenPendiente) {
+            $fechaVencimiento = Carbon::parse($ordenPendiente->fecha_vencimiento);
+            $ordenVencida = $hoy->greaterThan($fechaVencimiento);
             
-            return response()->json([
-                'success' => true,
-                'orden_reciente' => true,
-                'fecha_vencimiento' => $fechaVencimiento->format('d/m/Y'),
-                'ultima_orden' => $ordenReciente->codigo_orden,
-                'alumno' => [
-                    'id_alumno' => $alumno->id_alumno,
-                    'nombre_completo' => trim(
-                        ($alumno->primer_nombre ?? '') . ' ' . 
-                        ($alumno->otros_nombres ?? '') . ' ' . 
-                        ($alumno->apellido_paterno ?? '') . ' ' . 
-                        ($alumno->apellido_materno ?? '')
-                    ),
-                    'dni' => $alumno->dni,
-                    'codigo_educando' => $alumno->codigo_educando,
-                ],
-                'matricula' => [
-                    'id_matricula' => $matricula->id_matricula,
-                    'grado' => $matricula->grado->nombre_grado ?? 'N/A',
-                    'seccion' => $matricula->nombreSeccion ?? 'N/A',
-                    'nivel_educativo' => $matricula->grado->niveleducativo->nombre_nivel ?? 'N/A',
-                    'escala' => $matricula->escala ?? 'N/A',
-                    'año_academico' => $matricula->año_escolar,
-                ],
-                'deudas' => [],
-                'politica_descuento' => 0
-            ]);
+            // Calcular pagos realizados
+            $pagosRealizados = Pago::where('id_orden', $ordenPendiente->id_orden)
+                ->where('estado', 1)
+                ->sum('monto');
+            
+            // Si la orden NO está vencida (vigente), siempre bloquear
+            if (!$ordenVencida) {
+                return response()->json([
+                    'success' => true,
+                    'orden_vigente' => true,
+                    'bloquear_generacion' => true,
+                    'fecha_vencimiento' => $fechaVencimiento->format('d/m/Y'),
+                    'ultima_orden' => $ordenPendiente->codigo_orden,
+                    'mensaje_bloqueo' => 'Este alumno ya tiene una orden de pago vigente (' . $ordenPendiente->codigo_orden . ') que vence el ' . $fechaVencimiento->format('d/m/Y') . '. No puede generar otra orden hasta que esta venza o sea pagada completamente.',
+                    'alumno' => [
+                        'id_alumno' => $alumno->id_alumno,
+                        'nombre_completo' => trim(
+                            ($alumno->primer_nombre ?? '') . ' ' . 
+                            ($alumno->otros_nombres ?? '') . ' ' . 
+                            ($alumno->apellido_paterno ?? '') . ' ' . 
+                            ($alumno->apellido_materno ?? '')
+                        ),
+                        'dni' => $alumno->dni,
+                        'codigo_educando' => $alumno->codigo_educando,
+                    ],
+                    'matricula' => [
+                        'id_matricula' => $matricula->id_matricula,
+                        'grado' => $matricula->grado->nombre_grado ?? 'N/A',
+                        'seccion' => $matricula->nombreSeccion ?? 'N/A',
+                        'nivel_educativo' => $matricula->grado->niveleducativo->nombre_nivel ?? 'N/A',
+                        'escala' => $matricula->escala ?? 'N/A',
+                        'año_academico' => $matricula->año_escolar,
+                    ]
+                ]);
+            }
+            
+            // Si la orden está vencida PERO tiene pagos parciales, bloquear también
+            if ($ordenVencida && $pagosRealizados > 0) {
+                $montoPendiente = $ordenPendiente->monto_total - $pagosRealizados;
+                
+                return response()->json([
+                    'success' => true,
+                    'orden_vencida_con_deuda' => true,
+                    'bloquear_generacion' => true,
+                    'fecha_vencimiento' => $fechaVencimiento->format('d/m/Y'),
+                    'ultima_orden' => $ordenPendiente->codigo_orden,
+                    'monto_pendiente' => $montoPendiente,
+                    'mensaje_bloqueo' => 'Este alumno tiene una orden de pago vencida (' . $ordenPendiente->codigo_orden . ') con un saldo pendiente de S/ ' . number_format($montoPendiente, 2) . '. Debe completar el pago de esta orden antes de generar una nueva.',
+                    'alumno' => [
+                        'id_alumno' => $alumno->id_alumno,
+                        'nombre_completo' => trim(
+                            ($alumno->primer_nombre ?? '') . ' ' . 
+                            ($alumno->otros_nombres ?? '') . ' ' . 
+                            ($alumno->apellido_paterno ?? '') . ' ' . 
+                            ($alumno->apellido_materno ?? '')
+                        ),
+                        'dni' => $alumno->dni,
+                        'codigo_educando' => $alumno->codigo_educando,
+                    ],
+                    'matricula' => [
+                        'id_matricula' => $matricula->id_matricula,
+                        'grado' => $matricula->grado->nombre_grado ?? 'N/A',
+                        'seccion' => $matricula->nombreSeccion ?? 'N/A',
+                        'nivel_educativo' => $matricula->grado->niveleducativo->nombre_nivel ?? 'N/A',
+                        'escala' => $matricula->escala ?? 'N/A',
+                        'año_academico' => $matricula->año_escolar,
+                    ]
+                ]);
+            }
+            
+            // Si llegó aquí: orden vencida SIN pagos - permitir continuar (no bloquear)
         }
         
         $todasLasDeudas = Deuda::where('id_alumno', $alumno->id_alumno)
@@ -202,13 +252,48 @@ class OrdenPagoController extends Controller
             ->orderBy('fecha_limite', 'asc')
             ->get();
 
-        // Verificar si no tiene ninguna deuda pendiente
+        // Verificar si no tiene ninguna deuda pendiente en ningún período
         if ($todasLasDeudas->isEmpty()) {
-            return response()->json([
-                'success' => false,
-                'sin_deudas' => true,
-                'message' => 'El alumno está al día con sus pagos. No hay deudas pendientes para generar una orden de pago.'
-            ], 404);
+            // Si tiene múltiples matrículas, informar sobre los períodos revisados
+            if ($todasMatriculas->count() > 1) {
+                $periodos = $todasMatriculas->pluck('año_escolar')->unique()->sort()->values();
+                return response()->json([
+                    'success' => false,
+                    'sin_deudas' => true,
+                    'message' => 'El alumno está al día con sus pagos en todos los períodos (' . implode(', ', $periodos->toArray()) . '). No hay deudas pendientes para generar una orden de pago.'
+                ], 404);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'sin_deudas' => true,
+                    'message' => 'El alumno está al día con sus pagos. No hay deudas pendientes para generar una orden de pago.'
+                ], 404);
+            }
+        }
+
+        // Si encontramos deudas, determinar de qué matrícula vienen
+        // Obtener los años de las deudas encontradas
+        $aniosConDeudas = [];
+        foreach ($todasLasDeudas as $deuda) {
+            $descripcion = $deuda->conceptoPago->descripcion ?? '';
+            $partes = explode(' ', $descripcion);
+            if (count($partes) >= 2) {
+                $anioDeuda = intval($partes[1]);
+                $aniosConDeudas[] = $anioDeuda;
+            }
+        }
+        $aniosConDeudas = array_unique($aniosConDeudas);
+        
+        // Si las deudas son de un año diferente al de la primera matrícula,
+        // usar la matrícula correspondiente a ese año
+        if (!empty($aniosConDeudas)) {
+            $anioConMasDeudas = $aniosConDeudas[0]; // Usar el primer año con deudas
+            $matriculaDelAnio = $todasMatriculas->firstWhere('año_escolar', $anioConMasDeudas);
+            
+            if ($matriculaDelAnio) {
+                $matricula = $matriculaDelAnio;
+                \Log::info("Usando matrícula del año {$anioConMasDeudas} porque ahí están las deudas pendientes");
+            }
         }
 
         $tieneDeudasAnteriores = false;
@@ -233,8 +318,8 @@ class OrdenPagoController extends Controller
                 if ($anioDeuda < $anioActual || ($anioDeuda == $anioActual && $mesDeuda < $mesActual)) {
                     $tieneDeudasAnteriores = true;
                     $deudasAnteriores[] = $deuda;
-                } else if ($anioDeuda == $anioActual && $mesDeuda >= $mesActual) {
-                    // Solo incluir mes actual y futuros
+                } else if ($anioDeuda >= $anioActual) {
+                    // Incluir mes actual y futuros del año actual O cualquier año futuro
                     $deudasActualYPosteriores[] = $deuda;
                 }
             }
@@ -400,6 +485,49 @@ class OrdenPagoController extends Controller
             'id_alumno.required' => 'Por favor ingrese el código del alumno',
             'fecha_vencimiento.required' => 'Debe ingresar la fecha de vencimiento',
         ]);
+
+        // ============================================
+        // VALIDACIÓN: No permitir generar orden si ya tiene una orden pendiente o vencida con deuda
+        // ============================================
+        $ordenExistente = OrdenPago::where('id_alumno', $request->id_alumno)
+            ->where('estado', 'pendiente')
+            ->first();
+
+        if ($ordenExistente) {
+            $fechaActual = \Carbon\Carbon::now()->startOfDay();
+            $fechaVencimiento = \Carbon\Carbon::parse($ordenExistente->fecha_vencimiento)->startOfDay();
+            $ordenVencida = $fechaActual->greaterThan($fechaVencimiento);
+
+            // Calcular si la orden tiene pagos
+            $pagosRealizados = Pago::where('id_orden', $ordenExistente->id_orden)
+                ->where('estado', 1)
+                ->sum('monto');
+
+            // Si la orden NO está vencida (vigente), bloquear siempre
+            if (!$ordenVencida) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Este alumno ya tiene una orden de pago vigente (' . $ordenExistente->codigo_orden . ') que vence el ' . $fechaVencimiento->format('d/m/Y') . '. No puede generar otra orden hasta que esta venza o sea pagada completamente.',
+                    'codigo_orden_existente' => $ordenExistente->codigo_orden,
+                    'fecha_vencimiento' => $fechaVencimiento->format('d/m/Y')
+                ], 400);
+            }
+
+            // Si la orden está vencida PERO tiene deuda pendiente, bloquear también
+            if ($ordenVencida && $pagosRealizados > 0) {
+                $montoPendiente = $ordenExistente->monto_total - $pagosRealizados;
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Este alumno tiene una orden de pago vencida (' . $ordenExistente->codigo_orden . ') con un saldo pendiente de S/ ' . number_format($montoPendiente, 2) . '. Debe completar el pago de esta orden antes de generar una nueva.',
+                    'codigo_orden_existente' => $ordenExistente->codigo_orden,
+                    'monto_pendiente' => $montoPendiente
+                ], 400);
+            }
+
+            // Si llegó aquí: orden vencida SIN pagos - permitir generar nueva orden
+        }
+        // ============================================
 
         DB::beginTransaction();
         
@@ -636,8 +764,9 @@ class OrdenPagoController extends Controller
                 ]);
             }
 
+            // Redirigir a la vista con mensaje de éxito y el ID de la orden para abrir PDF en nueva ventana
             return redirect()
-                ->route('orden_pago_pdf', $orden->id_orden);
+                ->route('orden_pago_view', ['created' => true, 'pdf_id' => $orden->id_orden]);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -712,5 +841,152 @@ class OrdenPagoController extends Controller
             DB::rollBack();
             return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Buscar alumnos por nombre en tiempo real
+     */
+    public function buscarAlumnosPorNombre(Request $request)
+    {
+        try {
+            $termino = $request->input('termino', '');
+            $nivel_educativo = $request->input('nivel_educativo', '');
+            $grado_id = $request->input('grado_id', '');
+            $seccion_id = $request->input('seccion_id', '');
+
+            \Log::info('Búsqueda de alumnos', [
+                'termino' => $termino,
+                'nivel_educativo' => $nivel_educativo,
+                'grado_id' => $grado_id,
+                'seccion_id' => $seccion_id
+            ]);
+
+            // Validar que haya al menos un criterio
+            if (strlen($termino) < 2 && empty($nivel_educativo) && empty($grado_id) && empty($seccion_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Debe ingresar un nombre o seleccionar al menos un filtro'
+                ]);
+            }
+
+            $query = Alumno::query()
+                ->select(
+                    'alumnos.id_alumno',
+                    'alumnos.codigo_educando',
+                    'alumnos.primer_nombre',
+                    'alumnos.otros_nombres',
+                    'alumnos.apellido_paterno',
+                    'alumnos.apellido_materno',
+                    'alumnos.dni',
+                    'matriculas.id_matricula',
+                    'grados.nombre_grado',
+                    'matriculas.nombreSeccion',
+                    'niveles_educativos.nombre_nivel'
+                )
+                ->join('matriculas', 'alumnos.id_alumno', '=', 'matriculas.id_alumno')
+                ->join('grados', 'matriculas.id_grado', '=', 'grados.id_grado')
+                ->join('niveles_educativos', 'grados.id_nivel', '=', 'niveles_educativos.id_nivel')
+                ->where('matriculas.estado', true);
+
+            // Aplicar búsqueda por nombre solo si hay texto
+            if (strlen($termino) >= 2) {
+                $query->where(function($q) use ($termino) {
+                    $q->where('alumnos.primer_nombre', 'LIKE', "%{$termino}%")
+                      ->orWhere('alumnos.otros_nombres', 'LIKE', "%{$termino}%")
+                      ->orWhere('alumnos.apellido_paterno', 'LIKE', "%{$termino}%")
+                      ->orWhere('alumnos.apellido_materno', 'LIKE', "%{$termino}%")
+                      ->orWhere('alumnos.codigo_educando', 'LIKE', "%{$termino}%")
+                      ->orWhereRaw("CONCAT(alumnos.primer_nombre, ' ', alumnos.apellido_paterno) LIKE ?", ["%{$termino}%"])
+                      ->orWhereRaw("CONCAT(alumnos.primer_nombre, ' ', alumnos.apellido_paterno, ' ', alumnos.apellido_materno) LIKE ?", ["%{$termino}%"]);
+                });
+            }
+
+            // Aplicar filtros si están presentes
+            if (!empty($nivel_educativo)) {
+                $query->where('niveles_educativos.nombre_nivel', $nivel_educativo);
+            }
+
+            if (!empty($grado_id)) {
+                $query->where('matriculas.id_grado', $grado_id);
+            }
+
+            if (!empty($seccion_id)) {
+                // El filtro ya viene con el nombreSeccion directamente
+                $query->where('matriculas.nombreSeccion', $seccion_id);
+            }
+
+            $alumnos = $query->orderBy('alumnos.apellido_paterno')->limit(15)->get();
+
+            \Log::info('Alumnos encontrados', ['count' => $alumnos->count()]);
+
+            $resultados = $alumnos->map(function($alumno) {
+                return [
+                    'id_alumno' => $alumno->id_alumno,
+                    'codigo_educando' => $alumno->codigo_educando,
+                    'nombre_completo' => trim("{$alumno->primer_nombre} {$alumno->otros_nombres} {$alumno->apellido_paterno} {$alumno->apellido_materno}"),
+                    'dni' => $alumno->dni ?? 'N/A',
+                    'grado' => $alumno->nombre_grado ?? 'N/A',
+                    'seccion' => $alumno->nombreSeccion ?? 'N/A',
+                    'id_matricula' => $alumno->id_matricula
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'alumnos' => $resultados,
+                'total' => $resultados->count()
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error en búsqueda de alumnos', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al buscar alumnos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener lista de grados para filtros
+     */
+    public function obtenerGrados()
+    {
+        $grados = DB::table('grados')
+            ->select('id_grado', 'nombre_grado')
+            ->orderBy('nombre_grado')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'grados' => $grados
+        ]);
+    }
+
+    /**
+     * Obtener lista de secciones para filtros
+     */
+    public function obtenerSecciones(Request $request)
+    {
+        $grado_id = $request->input('grado_id');
+
+        $query = DB::table('secciones')
+            ->select('id_grado', 'nombreSeccion');
+
+        if ($grado_id) {
+            $query->where('id_grado', $grado_id);
+        }
+
+        $secciones = $query->where('estado', 1)
+            ->orderBy('nombreSeccion')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'secciones' => $secciones
+        ]);
     }
 }

@@ -78,13 +78,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const url = baseUrl + encodeURIComponent(codigoOrden);
         
         const response = await fetch(url);
+        const data = await response.json();
         
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Orden no encontrada');
+            // Si la orden está vencida, mostrar mensaje especial
+            if (data.orden_vencida && data.alumno && data.orden) {
+                datosEncontrados = {
+                    tipo: 'orden',
+                    orden_vencida: true,
+                    alumno: data.alumno,
+                    orden_info: data.orden
+                };
+                mostrarOrdenVencida(data.alumno, data.orden);
+                return;
+            }
+            
+            throw new Error(data.message || 'Orden no encontrada');
         }
-        
-        const data = await response.json();
         
         if (data.success) {
             datosEncontrados = {
@@ -118,7 +128,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     datos: data.alumno,
                     sin_orden: true
                 };
-                mostrarInformacionEstudiante(data.alumno, true);
+                mostrarInformacionEstudiante(data.alumno, true, 'sin_orden');
+                return;
+            }
+            
+            // Si la orden está vencida, mostrar mensaje especial
+            if (data.orden_vencida && data.alumno && data.orden) {
+                datosEncontrados = {
+                    tipo: 'estudiante',
+                    datos: data.alumno,
+                    orden_vencida: true,
+                    orden_info: data.orden
+                };
+                mostrarInformacionEstudiante(data.alumno, true, 'orden_vencida', data.orden);
                 return;
             }
             
@@ -139,23 +161,112 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function mostrarInformacionOrden(orden) {
-        // Ya no mostramos el contenedor de información encontrada
-        // La información se muestra directamente en cada sección
-        mostrarOpcionesTipoPago(true); // SIEMPRE mostrar ambas opciones
+        mostrarOpcionesTipoPago(true);
         
         helperBusqueda.innerHTML = '✅ Orden encontrada. Seleccione el tipo de pago a continuación.';
         helperBusqueda.className = 'text-xs mt-1 text-green-600 dark:text-green-400 font-medium';
     }
     
-    function mostrarInformacionEstudiante(alumno, sinOrden = false) {
+    function mostrarOrdenVencida(alumno, orden) {
+        // No mostrar opciones de pago
+        if (tipoPagoContainer) {
+            tipoPagoContainer.classList.add('hidden');
+        }
+        
+        helperBusqueda.innerHTML = `
+            <div class="flex items-start gap-3 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-l-4 border-red-500 dark:border-red-400 rounded-lg p-4 shadow-md mt-3">
+                <div class="flex-shrink-0">
+                    <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h4 class="text-sm font-bold text-red-800 dark:text-red-300 mb-1 flex items-center gap-2">
+                        Orden de Pago Vencida
+                    </h4>
+                    <p class="text-sm text-red-700 dark:text-red-300 leading-relaxed">
+                        La orden <span class="font-bold bg-red-100 dark:bg-red-800/40 px-2 py-0.5 rounded">${orden.codigo_orden}</span> 
+                        del estudiante <span class="font-semibold">${alumno.nombre_completo}</span> 
+                        venció el <span class="font-bold">${orden.fecha_vencimiento}</span>.
+                    </p>
+                    <div class="flex items-start gap-2 mt-2 text-sm text-red-600 dark:text-red-400 font-medium">
+                        <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                        </svg>
+                        <span>Por favor, genere una nueva orden de pago actualizada antes de continuar.</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        helperBusqueda.className = '';
+    }
+    
+    function mostrarInformacionEstudiante(alumno, tieneProblema = false, tipoProblema = null, ordenInfo = null) {
         // Ya no mostramos el contenedor de información encontrada
         // La información se muestra directamente en cada sección
         
-        if (sinOrden) {
-            // No mostrar opciones de pago si no hay orden
+        if (tieneProblema) {
+            // No mostrar opciones de pago si hay problemas
             tipoPagoContainer.classList.add('hidden');
-            helperBusqueda.innerHTML = '⚠️ Alumno encontrado pero sin orden de pago pendiente. Genere una orden primero.';
-            helperBusqueda.className = 'text-xs mt-1 text-yellow-600 dark:text-yellow-400 font-medium';
+            
+            if (tipoProblema === 'sin_orden') {
+                helperBusqueda.innerHTML = `
+                    <div class="flex items-start gap-3 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 border-l-4 border-yellow-500 dark:border-yellow-400 rounded-lg p-4 shadow-md mt-3">
+                        <div class="flex-shrink-0">
+                            <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-bold text-yellow-800 dark:text-yellow-300 mb-1 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                </svg>
+                                Sin Orden de Pago
+                            </h4>
+                            <p class="text-sm text-yellow-700 dark:text-yellow-300 leading-relaxed">
+                                El estudiante <span class="font-semibold">${alumno.nombre_completo}</span> no tiene una orden de pago pendiente.
+                            </p>
+                            <div class="flex items-start gap-2 mt-2 text-sm text-yellow-600 dark:text-yellow-400 font-medium">
+                                <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                                </svg>
+                                <span>Por favor, genere una orden de pago primero.</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                helperBusqueda.className = '';
+            } else if (tipoProblema === 'orden_vencida' && ordenInfo) {
+                helperBusqueda.innerHTML = `
+                    <div class="flex items-start gap-3 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-l-4 border-red-500 dark:border-red-400 rounded-lg p-4 shadow-md mt-3">
+                        <div class="flex-shrink-0">
+                            <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-bold text-red-800 dark:text-red-300 mb-1 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                </svg>
+                                Orden de Pago Vencida
+                            </h4>
+                            <p class="text-sm text-red-700 dark:text-red-300 leading-relaxed">
+                                La orden <span class="font-bold bg-red-100 dark:bg-red-800/40 px-2 py-0.5 rounded">${ordenInfo.codigo_orden}</span> 
+                                venció el <span class="font-bold">${ordenInfo.fecha_vencimiento}</span>.
+                            </p>
+                            <div class="flex items-start gap-2 mt-2 text-sm text-red-600 dark:text-red-400 font-medium">
+                                <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                                </svg>
+                                <span>Por favor, genere una nueva orden de pago actualizada.</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                helperBusqueda.className = '';
+            }
         } else {
             // SIEMPRE mostrar AMBAS opciones, sin importar qué se buscó
             mostrarOpcionesTipoPago(true);

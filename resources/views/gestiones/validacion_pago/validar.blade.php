@@ -317,10 +317,10 @@
                                                 <label class="block text-xs font-medium text-purple-700 dark:text-purple-300 mb-1">Confianza</label>
                                                 <div class="flex items-center gap-2">
                                                     <div class="flex-1 bg-purple-200 dark:bg-purple-800 rounded-full h-2">
-                                                        <div class="bg-purple-600 dark:bg-purple-400 h-2 rounded-full" style="width: {{ $detalle->porcentaje_confianza * 100 }}%"></div>
+                                                        <div class="bg-purple-600 dark:bg-purple-400 h-2 rounded-full" style="width: {{ $detalle->porcentaje_confianza }}%"></div>
                                                     </div>
                                                     <span class="text-sm font-semibold text-purple-900 dark:text-purple-200">
-                                                        {{ round($detalle->porcentaje_confianza * 100, 1) }}%
+                                                        {{ round($detalle->porcentaje_confianza, 1) }}%
                                                     </span>
                                                 </div>
                                             </div>

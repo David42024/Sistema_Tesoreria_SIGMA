@@ -238,11 +238,20 @@ class MatriculaController extends Controller
             ['id' => '2026', 'descripcion' => '2026']
         ];
 
-        $niveles = NivelEducativo::where("estado","=","1")->get();
+        $niveles = NivelEducativo::where("estado","=","1")
+            ->select('id_nivel', 'nombre_nivel')
+            ->distinct()
+            ->get();
 
-        $grados = Grado::where("estado","=","1")->get();
+        $grados = Grado::where("estado","=","1")
+            ->select('id_grado', 'nombre_grado', 'id_nivel')
+            ->distinct()
+            ->get();
 
-        $secciones = Seccion::where("estado","=","1")->get();
+        $secciones = Seccion::where("estado","=","1")
+            ->select('id_grado', 'nombreSeccion')
+            ->distinct()
+            ->get();
 
         $escalas = [
             ['id' => 'A', 'descripcion' => 'A'],
@@ -374,11 +383,20 @@ class MatriculaController extends Controller
             ['id' => '2026', 'descripcion' => '2026']
         ];
 
-        $niveles = NivelEducativo::where("estado","=","1")->get();
+        $niveles = NivelEducativo::where("estado","=","1")
+            ->select('id_nivel', 'nombre_nivel')
+            ->distinct()
+            ->get();
 
-        $grados = Grado::where("estado","=","1")->get();
+        $grados = Grado::where("estado","=","1")
+            ->select('id_grado', 'nombre_grado', 'id_nivel')
+            ->distinct()
+            ->get();
 
-        $secciones = Seccion::where("estado","=","1")->get();
+        $secciones = Seccion::where("estado","=","1")
+            ->select('id_grado', 'nombreSeccion')
+            ->distinct()
+            ->get();
         
         
 
@@ -510,8 +528,12 @@ class MatriculaController extends Controller
         $montoMensual = $escalas[$escala] ?? 0;
 
         // Calcular número de cuotas desde mes actual hasta diciembre
+        // Las clases empiezan en marzo, así que:
+        // - Si estamos en enero o febrero, contar desde marzo
+        // - Si estamos en marzo-diciembre, contar desde mes actual
         $mesActual = (int)date('n'); // 1-12
-        $cuotasPendientes = max(0, 12 - $mesActual + 1);
+        $mesInicio = ($mesActual < 3) ? 3 : $mesActual; // Si es enero o febrero, empezar desde marzo
+        $cuotasPendientes = max(0, 12 - $mesInicio + 1);
 
         // Total deuda
         $totalDeuda = $montoMensual * $cuotasPendientes;

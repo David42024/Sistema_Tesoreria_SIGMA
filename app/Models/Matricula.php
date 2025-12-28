@@ -58,33 +58,50 @@ class Matricula extends Model
             9 => 'SETIEMBRE', 10 => 'OCTUBRE', 11 => 'NOVIEMBRE', 12 => 'DICIEMBRE'
         ];
 
-        $anio = $this->año_escolar;
+        $anioEscolar = $this->año_escolar;
         $escala = $this->escala;
         $idAlumno = $this->id_alumno;
 
+        $anioActual = Carbon::now()->year;
         $mesActual = Carbon::now()->month;
 
-        for ($mes = $mesActual; $mes <= 12; $mes++) {
+        // Determinar el mes de inicio según las reglas del negocio:
+        // 1. Las clases empiezan en marzo
+        // 2. Si estamos matriculando para un año futuro, generar todas las deudas (marzo-diciembre)
+        // 3. Si estamos en enero o febrero del mismo año, empezar desde marzo
+        // 4. Si estamos en marzo-diciembre del mismo año, empezar desde el mes actual
+        if ($anioEscolar > $anioActual) {
+            // Matrícula para año futuro: generar todas las deudas desde marzo
+            $mesInicio = 3;
+        } elseif ($mesActual < 3) {
+            // Estamos en enero o febrero: empezar desde marzo
+            $mesInicio = 3;
+        } else {
+            // Estamos en marzo-diciembre: empezar desde el mes actual
+            $mesInicio = $mesActual;
+        }
+
+        for ($mes = $mesInicio; $mes <= 12; $mes++) {
             $nombreMes = $meses[$mes];
 
             // Buscar concepto de pago con el formato correcto: "OCTUBRE 2025" y escala "A"
-            $concepto = ConceptoPago::where('descripcion', "$nombreMes $anio")
+            $concepto = ConceptoPago::where('descripcion', "$nombreMes $anioEscolar")
                 ->where('escala', $escala)
                 ->where('estado', true)
                 ->first();
 
             if (!$concepto) {
-                throw new \Exception("No existe concepto de pago para $nombreMes $anio escala $escala");
+                throw new \Exception("No existe concepto de pago para $nombreMes $anioEscolar escala $escala");
             }
 
-            $fechaLimite = Carbon::createFromDate($anio, $mes, 1)->endOfMonth()->format('Y-m-d');
+            $fechaLimite = Carbon::createFromDate($anioEscolar, $mes, 1)->endOfMonth()->format('Y-m-d');
 
             Deuda::create([
                 'id_alumno' => $idAlumno,
                 'id_concepto' => $concepto->id_concepto,
                 'fecha_limite' => $fechaLimite,
                 'monto_total' => $concepto->monto,
-                'periodo' => "$nombreMes $anio",
+                'periodo' => "$nombreMes $anioEscolar",
                 'monto_a_cuenta' => 0,
                 'monto_adelantado' => 0,
                 'observacion' => null,
