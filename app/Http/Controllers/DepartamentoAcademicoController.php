@@ -221,7 +221,8 @@ class DepartamentoAcademicoController extends Controller
                     ->orWhere('primer_nombre', 'LIKE', "%{$search}%")
                     ->orWhere('apellido_paterno', 'LIKE', "%{$search}%")
                     ->orWhere('apellido_materno', 'LIKE', "%{$search}%")
-                    ->orWhere('cargo', 'LIKE', "%{$search}%");
+                    ->orWhere('telefono', 'LIKE', "%{$search}%")
+                    ->orWhere('codigo_personal', 'LIKE', "%{$search}%");
             });
         }
 
@@ -316,20 +317,26 @@ class DepartamentoAcademicoController extends Controller
             ->with('success', 'Docente agregado correctamente al departamento.');
     }
 
-    public function quitarDocente(Request $request, $id)
+   public function quitarDocente(Request $request)
     {
         $idPersonal = $request->input('id_personal');
-
+        
         $docente = Personal::where('id_personal', $idPersonal)
-            ->where('id_departamento', $id)
+            ->whereNotNull('id_departamento')
             ->firstOrFail();
+        
+        $idDepartamento = $docente->id_departamento;
+        
+        // Obtener el nombre del departamento antes de quitar
+        $departamento = DepartamentoAcademico::find($idDepartamento);
+        $nombreDepartamento = $departamento->nombre ?? 'desconocido';
 
         $docente->update([
             'id_departamento' => null
         ]);
 
-        return redirect()->route('departamento_academico_docentes', ['id' => $id])
-            ->with('success', 'Docente removido del departamento.');
+        return redirect()->route('departamento_academico_docentes', ['id' => $idDepartamento])
+            ->with('removed', $nombreDepartamento);
     }
 
     /* ==================== CRUD BÁSICO ==================== */
