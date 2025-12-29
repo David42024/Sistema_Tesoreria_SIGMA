@@ -14,149 +14,246 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
+use App\Helpers\CRUDTablePage;
+use App\Helpers\ExcelExportHelper;
+use App\Helpers\FilteredSearchQuery;
+use App\Helpers\PDFExportHelper;
+use App\Helpers\RequestHelper;
+use App\Helpers\TableAction;
+use App\Helpers\Tables\AdministrativoHeaderComponent;
+use App\Helpers\Tables\AdministrativoSidebarComponent;
+use App\Helpers\Tables\CautionModalComponent;
+use App\Helpers\Tables\CRUDTableComponent;
+use App\Helpers\Tables\FilterConfig;
+use App\Helpers\Tables\PaginatorRowsSelectorComponent;
+use App\Helpers\Tables\SearchBoxComponent;
+use App\Helpers\Tables\TableButtonComponent;
+use App\Helpers\Tables\TableComponent;
+use App\Helpers\Tables\TablePaginator;
+
 class PagoController extends Controller
 {
-    private static function doSearch($sqlColumns, $search, $maxEntriesShow){
-        if (!isset($search)){
-            $query = Pago::where('estado', '=', '1')->paginate($maxEntriesShow);
-        } else {
-            $query = Pago::where('estado', '=', '1')
-                ->whereAny($sqlColumns, 'LIKE', "%{$search}%")
-                ->paginate($maxEntriesShow);    
-        }
-        return $query;
-    }
-   
-    public function index(Request $request){
-        $sqlColumns = ['id_pago','id_concepto','id_alumno','fecha_pago', 'monto', 'observaciones'];
-        $resource = 'financiera';
-
-        $maxEntriesShow = $request->input('showing', 10);
-        $paginaActual = $request->input('page', 1);
-        $search = $request->input('search');
-
-        if (!is_numeric($paginaActual) || $paginaActual <= 0) $paginaActual = 1;
-        if (!is_numeric($maxEntriesShow) || $maxEntriesShow <= 0) $maxEntriesShow = 10;
-
-        $query = PagoController::doSearch($sqlColumns, $search, $maxEntriesShow);
-
-        if ($paginaActual > $query->lastPage()){
-            $paginaActual = 1;
-            $request['page'] = $paginaActual;
-            $query = PagoController::doSearch($sqlColumns, $search, $maxEntriesShow);
-        }
-
-        $data = [
-            'titulo' => 'Pagos',
-            'columnas' => [
-                'ID',
-                'Concepto de Pago',
-                'Nombre del Alumno',
-                'Fecha de Pago',
-                'Monto',
-                'Observaciones'
-            ],
-            'filas' => [],
-            'showing' => $maxEntriesShow,
-            'paginaActual' => $paginaActual, 
-            'totalPaginas' => $query->lastPage(),
-            'resource' => $resource,
-            'view' => 'pago_view',
-            'create' => 'pago_create',
-            'edit' => 'pago_edit',
-            'delete' => 'pago_delete',
+    private static function doSearch($sqlColumns, $search, $maxEntriesShow, $appliedFilters = [])
+    {
+        $columnMap = [
+            'ID' => 'id_pago',
+            'Fecha de Pago' => 'fecha_pago',
+            'Monto' => 'monto',
+            'Observaciones' => 'observaciones',
         ];
 
-        if ($request->input("created", false)){
-            $data['created'] = $request->input('created');
+        // Columnas que deben usar búsqueda por fecha (LIKE con año-mes o año)
+        $dateColumns = ['fecha_pago'];
+
+        $query = Pago::where('estado', '=', '1');
+
+        // Búsqueda general
+        if (!empty($search)) {
+            $query->where(function($q) use ($sqlColumns, $search) {
+                foreach ($sqlColumns as $column) {
+                    $q->orWhere($column, 'LIKE', "%{$search}%");
+                }
+            });
         }
 
-        if ($request->input("edited", false)){
-            $data['edited'] = $request->input('edited');
+        // Filtros aplicados
+        if (!empty($appliedFilters)) {
+            foreach ($appliedFilters as $filter) {
+                $key = $filter['key'] ?? null;
+                $value = $filter['value'] ?? null;
+
+                if ($key && $value && isset($columnMap[$key])) {
+                    $sqlColumn = $columnMap[$key];
+
+                    // Si es columna de fecha, usar LIKE para búsqueda parcial
+                    if (in_array($sqlColumn, $dateColumns)) {
+                        // Permite buscar por: "2025", "2025-01", "01/2025", "enero", etc.
+                        $query->where(function($q) use ($sqlColumn, $value) {
+                            // Formato YYYY-MM-DD
+                            $q->where($sqlColumn, 'LIKE', "%{$value}%");
+                            
+                            // Si viene en formato DD/MM/YYYY, convertir
+                            if (preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/', $value, $matches)) {
+                                $fechaFormateada = $matches[3] . '-' . str_pad($matches[2], 2, '0', STR_PAD_LEFT) . '-' . str_pad($matches[1], 2, '0', STR_PAD_LEFT);
+                                $q->orWhere($sqlColumn, 'LIKE', "%{$fechaFormateada}%");
+                            }
+                            
+                            // Si viene solo mes/año (MM/YYYY)
+                            if (preg_match('/^(\d{1,2})\/(\d{4})$/', $value, $matches)) {
+                                $fechaFormateada = $matches[2] . '-' . str_pad($matches[1], 2, '0', STR_PAD_LEFT);
+                                $q->orWhere($sqlColumn, 'LIKE', "%{$fechaFormateada}%");
+                            }
+                        });
+                    } else {
+                        $query->where($sqlColumn, 'LIKE', "%{$value}%");
+                    }
+                }
+            }
         }
 
-        if ($request->input("abort", false)){
-            $data['abort'] = $request->input('abort');
+        if ($maxEntriesShow === null) {
+            return $query->get();
+        } else {
+            return $query->paginate($maxEntriesShow);
+        }
+    }
+
+    public function index(Request $request, $long = false)
+    {
+        $sqlColumns = ['id_pago', 'fecha_pago', 'monto', 'observaciones'];
+        $resource = 'financiera';
+
+        $params = RequestHelper::extractSearchParams($request);
+
+        $page = CRUDTablePage::new()
+            ->title("Pagos")
+            ->sidebar(new AdministrativoSidebarComponent())
+            ->header(new AdministrativoHeaderComponent());
+
+        $content = CRUDTableComponent::new()
+            ->title("Pagos");
+
+        $filterButton = new TableButtonComponent("tablesv2.buttons.filtros");
+        $content->addButton($filterButton);
+
+        /* Definición de botones */
+        $descargaButton = new TableButtonComponent("tablesv2.buttons.download");
+        $createNewEntryButton = new TableButtonComponent("tablesv2.buttons.createNewEntry", ["redirect" => "pago_create"]);
+
+        if (!$long) {
+            $vermasButton = new TableButtonComponent("tablesv2.buttons.vermas", ["redirect" => "pago_viewAll"]);
+        } else {
+            $vermasButton = new TableButtonComponent("tablesv2.buttons.vermenos", ["redirect" => "pago_view"]);
+            $params->showing = 100;
         }
 
-        if ($request->input("deleted", false)){
-            $data['deleted'] = $request->input('deleted');
+        $content->addButton($vermasButton);
+        $content->addButton($descargaButton);
+        $content->addButton($createNewEntryButton);
+
+        /* Paginador */
+        $paginatorRowsSelector = new PaginatorRowsSelectorComponent();
+        if ($long) $paginatorRowsSelector = new PaginatorRowsSelectorComponent([100]);
+        $paginatorRowsSelector->valueSelected = $params->showing;
+        $content->paginatorRowsSelector($paginatorRowsSelector);
+
+        /* Searchbox */
+        $searchBox = new SearchBoxComponent();
+        $searchBox->placeholder = "Buscar...";
+        $searchBox->value = $params->search;
+        $content->searchBox($searchBox);
+
+        /* Modales usados */
+        $cautionModal = CautionModalComponent::new()
+            ->cautionMessage('¿Estás seguro?')
+            ->action('Estás eliminando el Pago')
+            ->columns(['Concepto de Pago', 'Estudiante', 'Fecha de Pago', 'Monto','Observaciones'])
+            ->rows(['', '', '', '',''])
+            ->lastWarningMessage('Borrar esto afectará a todo lo que esté vinculado a este Pago.')
+            ->confirmButton('Sí, bórralo')
+            ->cancelButton('Cancelar')
+            ->isForm(true)
+            ->dataInputName('id')
+            ->build();
+
+        $page->modals([$cautionModal]);
+
+        /* Lógica del controller */
+        $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
+
+        if ($params->page > $query->lastPage()) {
+            $params->page = 1;
+            $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
         }
 
-        foreach ($query as $pago){
+        $filterConfig = new FilterConfig();
+        $filterConfig->filters = [
+            "ID", "Fecha de Pago", "Monto", "Observaciones"
+        ];
+        $filterConfig->filterOptions = [];
+        $content->filterConfig = $filterConfig;
+
+        $table = new TableComponent();
+        $table->columns = ["ID", "Concepto de Pago", "Nombre del Alumno", "Fecha de Pago", "Monto", "Observaciones"];
+        $table->rows = [];
+
+        foreach ($query as $pago) {
             // Cargar relaciones según el tipo de pago
             if ($pago->id_deuda) {
-                // Pago de deuda individual
                 $pago = Pago::with(['deuda.conceptoPago', 'deuda.alumno'])->findOrFail($pago->id_pago);
-                
-                $concepto = $pago->deuda->conceptoPago->descripcion ?? 'Sin concepto'; 
+
+                $concepto = $pago->deuda->conceptoPago->descripcion ?? 'Sin concepto';
                 $alumno = trim(
-                    ($pago->deuda->alumno->primer_nombre ?? '') . ' ' . 
-                    ($pago->deuda->alumno->otros_nombres ?? '') . ' ' . 
-                    ($pago->deuda->alumno->apellido_paterno ?? '') . ' ' . 
+                    ($pago->deuda->alumno->primer_nombre ?? '') . ' ' .
+                    ($pago->deuda->alumno->otros_nombres ?? '') . ' ' .
+                    ($pago->deuda->alumno->apellido_paterno ?? '') . ' ' .
                     ($pago->deuda->alumno->apellido_materno ?? '')
                 ) ?: 'Sin nombre';
-                
-                $montoAPagar = $pago->deuda->monto_total ?? 0;
-                
+
             } else if ($pago->id_orden) {
-                // Pago de orden completa
                 $pago = Pago::with(['ordenPago.alumno'])->findOrFail($pago->id_pago);
-                
-                // Para órdenes, mostrar el tipo de pago como concepto
-                $tipoPagoLabel = match($pago->tipo_pago) {
+
+                $tipoPagoLabel = match ($pago->tipo_pago) {
                     'orden_completa' => 'ORDEN COMPLETA',
                     'orden_parcial' => 'ORDEN PARCIAL',
                     default => 'PAGO DE ORDEN'
                 };
                 $concepto = $tipoPagoLabel;
-                
+
                 $alumno = trim(
-                    ($pago->ordenPago->alumno->primer_nombre ?? '') . ' ' . 
-                    ($pago->ordenPago->alumno->otros_nombres ?? '') . ' ' . 
-                    ($pago->ordenPago->alumno->apellido_paterno ?? '') . ' ' . 
+                    ($pago->ordenPago->alumno->primer_nombre ?? '') . ' ' .
+                    ($pago->ordenPago->alumno->otros_nombres ?? '') . ' ' .
+                    ($pago->ordenPago->alumno->apellido_paterno ?? '') . ' ' .
                     ($pago->ordenPago->alumno->apellido_materno ?? '')
                 ) ?: 'Sin nombre';
-                
-                $montoAPagar = $pago->ordenPago->monto_total ?? 0;
-                
+
             } else {
-                // Caso inesperado - sin deuda ni orden
                 $concepto = 'Sin concepto';
                 $alumno = 'Sin nombre';
-                $montoAPagar = 0;
             }
-            
-            $fechaPago = $pago->fecha_pago instanceof Carbon ? $pago->fecha_pago->format('d/m/Y') : Carbon::parse($pago->fecha_pago)->format('d/m/Y');
+
+            $fechaPago = $pago->fecha_pago instanceof Carbon
+                ? $pago->fecha_pago->format('d/m/Y')
+                : Carbon::parse($pago->fecha_pago)->format('d/m/Y');
+
             $observaciones = $pago->observaciones ?? 'Sin Observaciones';
 
-            $cantidadDetalles = $pago->detallesPago()
-                ->where('estado', 1)
-                ->count();
-
-            // Verificar si hay detalles rechazados
-            $tieneDetallesRechazados = $pago->detallesPago()
-                ->where('estado_validacion', 'rechazado')
-                ->exists();
-
-            array_push($data['filas'],
-            [
-                $pago->id_pago,  
-                $concepto,              
-                $alumno,                
-                $fechaPago,      
-                $pago->monto,       
+            array_push($table->rows, [
+                $pago->id_pago,
+                $concepto,
+                $alumno,
+                $fechaPago,
+                'S/ ' . number_format($pago->monto, 2),
                 $observaciones,
-                $cantidadDetalles,
-                $montoAPagar,
-                $tieneDetallesRechazados, 
             ]);
         }
 
-        return view('gestiones.pago.index', compact('data'));
+        $table->actions = [
+            new TableAction('edit', 'pago_edit', $resource),
+            new TableAction('delete', '', $resource),
+        ];
+
+        $paginator = new TablePaginator($params->page, $query->lastPage(), [
+            'search' => $params->search,
+            'showing' => $params->showing,
+            'applied_filters' => $params->applied_filters
+        ]);
+        $table->paginator = $paginator;
+
+        $content->tableComponent($table);
+
+        $page->content($content->build());
+
+        return $page->render();
     }
 
-    public function create(Request $request){
+    public function viewAll(Request $request)
+    {
+        return static::index($request, true);
+    }
+
+    public function create(Request $request)
+    {
         $alumnos = Alumno::all(['id_alumno', 'codigo_educando']);
         $deudas = Deuda::all(['id_deuda', 'id_alumno', 'id_concepto', 'periodo', 'monto_total']);
         $conceptos = ConceptoPago::all(['id_concepto', 'descripcion']);
@@ -170,7 +267,8 @@ class PagoController extends Controller
         return view('gestiones.pago.create', compact('data'));
     }
 
-    public function crearPagoOrden(Request $request){
+    public function crearPagoOrden(Request $request)
+    {
         return view('gestiones.pago.registrar_pago_orden');
     }
 
@@ -190,24 +288,23 @@ class PagoController extends Controller
         $detalleMonto = $request->input('detalle_monto', []);
         $detalleFecha = $request->input('detalle_fecha', []);
         $detallesExistentes = (int) $request->input('detalles_existentes', 0);
-        
-        // Verificar si la deuda es un adelanto y validar que se pague completo
+
         $deuda = Deuda::with('conceptoPago')->findOrFail($request->input('id_deuda'));
         $conceptoPago = $deuda->conceptoPago;
-        
+
         $hoy = Carbon::now();
         $mesActual = $hoy->month;
         $anioActual = $hoy->year;
-        
+
         $descripcion = $conceptoPago->descripcion ?? '';
         $partes = explode(' ', $descripcion);
-        
+
         $meses = [
             'ENERO' => 1, 'FEBRERO' => 2, 'MARZO' => 3, 'ABRIL' => 4,
             'MAYO' => 5, 'JUNIO' => 6, 'JULIO' => 7, 'AGOSTO' => 8,
             'SETIEMBRE' => 9, 'OCTUBRE' => 10, 'NOVIEMBRE' => 11, 'DICIEMBRE' => 12
         ];
-        
+
         $esAdelanto = false;
         if (count($partes) >= 2) {
             $mesDeuda = $meses[$partes[0]] ?? 0;
@@ -217,12 +314,12 @@ class PagoController extends Controller
                 $esAdelanto = true;
             }
         }
-        
+
         if ($esAdelanto) {
             if ($detallesExistentes > 0) {
                 return back()->withErrors(['id_deuda' => 'Los adelantos deben pagarse en una sola vez. Esta deuda ya tiene un pago registrado.'])->withInput();
             }
-            
+
             $montoTotalIntento = 0;
             foreach (range(0, 1) as $index) {
                 $monto = $detalleMonto[$index] ?? null;
@@ -230,35 +327,35 @@ class PagoController extends Controller
                     $montoTotalIntento += floatval($monto);
                 }
             }
-            
+
             $montoDeuda = floatval($deuda->monto_total);
             if (abs($montoTotalIntento - $montoDeuda) > 0.01) {
                 return back()->withErrors([
                     'detalle_monto.0' => sprintf(
-                        'Los adelantos deben pagarse completos. El monto total debe ser S/ %.2f (ingresÃ³ S/ %.2f)',
+                        'Los adelantos deben pagarse completos. El monto total debe ser S/ %.2f (ingresó S/ %.2f)',
                         $montoDeuda,
                         $montoTotalIntento
                     )
                 ])->withInput();
             }
         }
-        
+
         $detallesCompletos = [];
         $detallesIncompletos = [];
-        
+
         foreach (range(0, 1) as $index) {
             if ($index < $detallesExistentes) continue;
-            
+
             $metodo = $metodoPago[$index] ?? null;
             $recibo = $detalleRecibo[$index] ?? null;
             $monto = $detalleMonto[$index] ?? null;
             $fecha = $detalleFecha[$index] ?? null;
-            
+
             $tieneDatos = !empty($metodo) || !empty($recibo) || !empty($monto) || !empty($fecha);
-            
+
             if ($tieneDatos) {
                 $estaCompleto = !empty($metodo) && !empty($recibo) && !empty($monto) && !empty($fecha);
-                
+
                 if ($estaCompleto) {
                     $detallesCompletos[] = $index;
                 } else {
@@ -266,21 +363,21 @@ class PagoController extends Controller
                 }
             }
         }
-        
+
         if ($detallesExistentes === 0 && empty($detallesCompletos) && empty($detallesIncompletos)) {
             return back()->withErrors(["metodo_pago.0" => 'Debe ingresar al menos un detalle de pago.'])->withInput();
         }
-        
+
         if ($detallesExistentes > 0 && empty($detallesCompletos) && empty($detallesIncompletos)) {
             return back()->with('info', 'No se realizaron cambios.')->withInput();
         }
-        
+
         if ($detallesExistentes + count($detallesCompletos) + count($detallesIncompletos) > 2) {
             return back()->withErrors(['metodo_pago.1' => 'Solo puede registrar hasta 2 detalles de pago.'])->withInput();
         }
-        
+
         $errors = [];
-        
+
         foreach ($detallesIncompletos as $index) {
             $metodo = $metodoPago[$index] ?? null;
             $recibo = $detalleRecibo[$index] ?? null;
@@ -309,10 +406,10 @@ class PagoController extends Controller
                 $errors["detalle_fecha.{$index}"] = "La fecha del detalle " . ($index + 1) . " no es válida.";
             }
         }
-        
+
         foreach ($detallesCompletos as $index) {
             $metodo = strtolower(trim($metodoPago[$index] ?? ''));
-            
+
             if (in_array($metodo, ['transferencia', 'yape', 'plin'])) {
                 if (!$request->hasFile("voucher_path.$index")) {
                     $errors["voucher_path.{$index}"] = "Debe subir la constancia de pago para el método: " . ucfirst($metodo) . ".";
@@ -323,10 +420,10 @@ class PagoController extends Controller
         if (!empty($errors)) {
             return back()->withErrors($errors)->withInput();
         }
-        
+
         $detallesValidos = $detallesCompletos;
 
-        DB::transaction(function() use ($request, $detallesValidos) {
+        DB::transaction(function () use ($request, $detallesValidos) {
             $idDeuda = $request->input('id_deuda');
             $fechas = $request->input('detalle_fecha');
             $montos = $request->input('detalle_monto');
@@ -348,12 +445,10 @@ class PagoController extends Controller
                 ->where('estado', 1)
                 ->first();
 
-            // Verificar si esta deuda pertenece a una orden de pago
             $deudaObj = Deuda::with('detallesOrdenPago.ordenPago')->find($idDeuda);
             $idOrden = null;
-            
+
             if ($deudaObj && $deudaObj->detallesOrdenPago->isNotEmpty()) {
-                // Obtener la orden de pago relacionada (toma la primera si hay varias)
                 $detalleOrden = $deudaObj->detallesOrdenPago->first();
                 if ($detalleOrden && $detalleOrden->ordenPago) {
                     $idOrden = $detalleOrden->ordenPago->id_orden;
@@ -362,7 +457,6 @@ class PagoController extends Controller
 
             if ($pagoExistente) {
                 $pago = $pagoExistente;
-                // Si el pago existente no tiene id_orden, asignarlo ahora
                 if (!$pago->id_orden && $idOrden) {
                     $pago->update(['id_orden' => $idOrden]);
                 }
@@ -403,7 +497,7 @@ class PagoController extends Controller
             }
 
             $montoTotalCalculado = DetallePago::where('id_pago', $pago->getKey())
-                ->where('estado', 1, )
+                ->where('estado', 1)
                 ->sum('monto');
 
             $pago->update([
@@ -412,7 +506,6 @@ class PagoController extends Controller
                 'observaciones' => $request->input('observaciones') ?: $pago->observaciones,
             ]);
 
-            // Verificar si el pago estÃ¡ relacionado con una orden y actualizar su estado
             if ($pago->id_orden) {
                 $ordenPago = OrdenPago::find($pago->id_orden);
                 if ($ordenPago && $ordenPago->estaPagadaCompletamente()) {
@@ -423,30 +516,30 @@ class PagoController extends Controller
             $deuda = Deuda::find($idDeuda);
             if ($deuda) {
                 $conceptoPago = ConceptoPago::find($deuda->id_concepto);
-                
+
                 $hoy = Carbon::now();
                 $mesActual = $hoy->month;
                 $anioActual = $hoy->year;
-                
+
                 $descripcion = $conceptoPago->descripcion ?? '';
                 $partes = explode(' ', $descripcion);
-                
+
                 $meses = [
                     'ENERO' => 1, 'FEBRERO' => 2, 'MARZO' => 3, 'ABRIL' => 4,
                     'MAYO' => 5, 'JUNIO' => 6, 'JULIO' => 7, 'AGOSTO' => 8,
                     'SETIEMBRE' => 9, 'OCTUBRE' => 10, 'NOVIEMBRE' => 11, 'DICIEMBRE' => 12
                 ];
-                
+
                 $esAdelanto = false;
                 if (count($partes) >= 2) {
                     $mesDeuda = $meses[$partes[0]] ?? 0;
                     $anioDeuda = intval($partes[1]);
-                    
+
                     if ($anioDeuda > $anioActual || ($anioDeuda == $anioActual && $mesDeuda > $mesActual)) {
                         $esAdelanto = true;
                     }
                 }
-                
+
                 if ($esAdelanto) {
                     $deuda->update([
                         'monto_adelantado' => $montoTotalCalculado
@@ -461,8 +554,9 @@ class PagoController extends Controller
         });
 
         return redirect()->route('pago_view', ['created' => true])
-                        ->with('success', 'Pago registrado correctamente en estado pendiente.');
+            ->with('success', 'Pago registrado correctamente en estado pendiente.');
     }
+
 
     public function edit(Request $request, $id)
     {
@@ -1690,6 +1784,138 @@ class PagoController extends Controller
                 'message' => 'Error al buscar la orden: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function export(Request $request)
+    {
+        try {
+            $format = $request->input('export', 'excel');
+
+            $sqlColumns = ['id_pago', 'fecha_pago', 'monto', 'observaciones'];
+
+            $params = RequestHelper::extractSearchParams($request);
+
+            $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
+
+            \Log::info('Exportando pagos', [
+                'format' => $format,
+                'total_records' => $query->count(),
+            ]);
+
+            if ($format === 'pdf') {
+                return $this->exportPdf($query);
+            }
+
+            return $this->exportExcel($query);
+
+        } catch (\Exception $e) {
+            \Log::error('Error en exportación de pagos: ' . $e->getMessage());
+            return back()->with('error', 'Error durante la exportación');
+        }
+    }
+
+    private function exportExcel($pagos)
+    {
+        $headers = ['ID', 'Concepto de Pago', 'Estudiante', 'Fecha de Pago', 'Monto', 'Observaciones'];
+        $fileName = 'pagos_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+        return ExcelExportHelper::exportExcel(
+            $fileName,
+            $headers,
+            $pagos,
+            function ($sheet, $row, $pago) {
+                // Cargar relaciones
+                if ($pago->id_deuda) {
+                    $pago->load(['deuda.conceptoPago', 'deuda.alumno']);
+                    $concepto = $pago->deuda->conceptoPago->descripcion ?? 'Sin concepto';
+                    $alumno = trim(
+                        ($pago->deuda->alumno->primer_nombre ?? '') . ' ' .
+                        ($pago->deuda->alumno->apellido_paterno ?? '') . ' ' .
+                        ($pago->deuda->alumno->apellido_materno ?? '')
+                    );
+                } elseif ($pago->id_orden) {
+                    $pago->load(['ordenPago.alumno']);
+                    $concepto = $pago->tipo_pago === 'orden_completa' ? 'ORDEN COMPLETA' : 'ORDEN PARCIAL';
+                    $alumno = trim(
+                        ($pago->ordenPago->alumno->primer_nombre ?? '') . ' ' .
+                        ($pago->ordenPago->alumno->apellido_paterno ?? '') . ' ' .
+                        ($pago->ordenPago->alumno->apellido_materno ?? '')
+                    );
+                } else {
+                    $concepto = 'Sin concepto';
+                    $alumno = 'Sin nombre';
+                }
+
+                $fechaPago = $pago->fecha_pago instanceof Carbon
+                    ? $pago->fecha_pago->format('d/m/Y')
+                    : Carbon::parse($pago->fecha_pago)->format('d/m/Y');
+
+                $sheet->setCellValue('A' . $row, $pago->id_pago);
+                $sheet->setCellValue('B' . $row, $concepto);
+                $sheet->setCellValue('C' . $row, $alumno);
+                $sheet->setCellValue('D' . $row, $fechaPago);
+                $sheet->setCellValue('E' . $row, 'S/ ' . number_format($pago->monto, 2));
+                $sheet->setCellValue('F' . $row, $pago->observaciones ?? 'Sin observaciones');
+            },
+            'Pagos',
+            'Exportación de Pagos',
+            'Listado de pagos del sistema'
+        );
+    }
+
+    private function exportPdf($pagos)
+    {
+        if ($pagos->isEmpty()) {
+            return response()->json(['error' => 'No hay datos para exportar'], 400);
+        }
+
+        $fileName = 'pagos_' . date('Y-m-d_H-i-s') . '.pdf';
+
+        $rows = $pagos->map(function ($pago) {
+            if ($pago->id_deuda) {
+                $pago->load(['deuda.conceptoPago', 'deuda.alumno']);
+                $concepto = $pago->deuda->conceptoPago->descripcion ?? 'Sin concepto';
+                $alumno = trim(
+                    ($pago->deuda->alumno->primer_nombre ?? '') . ' ' .
+                    ($pago->deuda->alumno->apellido_paterno ?? '') . ' ' .
+                    ($pago->deuda->alumno->apellido_materno ?? '')
+                );
+            } elseif ($pago->id_orden) {
+                $pago->load(['ordenPago.alumno']);
+                $concepto = $pago->tipo_pago === 'orden_completa' ? 'ORDEN COMPLETA' : 'ORDEN PARCIAL';
+                $alumno = trim(
+                    ($pago->ordenPago->alumno->primer_nombre ?? '') . ' ' .
+                    ($pago->ordenPago->alumno->apellido_paterno ?? '') . ' ' .
+                    ($pago->ordenPago->alumno->apellido_materno ?? '')
+                );
+            } else {
+                $concepto = 'Sin concepto';
+                $alumno = 'Sin nombre';
+            }
+
+            $fechaPago = $pago->fecha_pago instanceof Carbon
+                ? $pago->fecha_pago->format('d/m/Y')
+                : Carbon::parse($pago->fecha_pago)->format('d/m/Y');
+
+            return [
+                $pago->id_pago,
+                $concepto,
+                $alumno,
+                $fechaPago,
+                'S/ ' . number_format($pago->monto, 2),
+                $pago->observaciones ?? 'Sin observaciones'
+            ];
+        })->toArray();
+
+        $html = PDFExportHelper::generateTableHtml([
+            'title' => 'Pagos',
+            'subtitle' => 'Listado de Pagos',
+            'headers' => ['ID', 'Concepto', 'Estudiante', 'Fecha', 'Monto', 'Observaciones'],
+            'rows' => $rows,
+            'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente',
+        ]);
+
+        return PDFExportHelper::exportPdf($fileName, $html);
     }
 }
 

@@ -8,6 +8,7 @@ use App\Models\Familiar;
 use DB;
 use Illuminate\Http\Request;
 use App\Models\Alumno;
+
 use App\Helpers\CRUDTablePage;
 use App\Helpers\ExcelExportHelper;
 use App\Helpers\PDFExportHelper;
@@ -1139,7 +1140,6 @@ class AlumnoController extends Controller
         }
     }
 
-    // 🔥 MÉTODO EXPORT EXCEL MEJORADO
     private function exportExcel($alumnos)
     {
         try {
@@ -1181,7 +1181,6 @@ class AlumnoController extends Controller
         }
     }
 
-    // 🔥 MÉTODO EXPORT PDF MEJORADO
     private function exportPdf($alumnos)
     {
         try {

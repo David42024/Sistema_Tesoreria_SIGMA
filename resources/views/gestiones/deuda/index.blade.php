@@ -17,7 +17,6 @@
         'Observaciones',
       ],
       'rows' => [
-        'id_deuda',
         'periodo',
         'id_alumno',
         'id_concepto',

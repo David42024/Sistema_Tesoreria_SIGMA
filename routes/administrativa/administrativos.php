@@ -5,6 +5,9 @@ use App\Http\Controllers\AdministrativoController;
 Route::get('/', [AdministrativoController::class, 'index'])
         ->name('view');
 
+Route::get('/mas', [AdministrativoController::class, 'viewAll'])
+    ->name('viewAll');
+
 Route::group(['middleware' => ['can:manage-resource,"administrativa","create"']], function(){
     Route::get('/crear', [AdministrativoController::class, 'create'])
         ->name('create');
@@ -24,4 +27,11 @@ Route::group(['middleware' => ['can:manage-resource,"administrativa","edit"']], 
 Route::group(['middleware' => ['can:manage-resource,"administrativa","delete"']], function(){
     Route::delete('/', [AdministrativoController::class, 'delete'])
         ->name('delete');
+});
+
+Route::group(['middleware' => ['can:manage-resource,"administrativa","download"']], function(){
+    Route::get('/export', [AdministrativoController::class, 'export'])
+        ->name('export');
+
+    Route::redirect('/mas/export', '/administrativos/export');
 });

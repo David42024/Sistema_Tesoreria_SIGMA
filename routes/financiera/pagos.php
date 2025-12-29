@@ -5,6 +5,9 @@ use App\Http\Controllers\PagoController;
 Route::get('/', [PagoController::class, 'index'])
     ->name('view');
 
+Route::get('/mas', [PagoController::class, 'viewAll'])
+    ->name('viewAll');
+
 Route::group(['middleware' => ['can:manage-resource,"financiera","create"']], function(){
     Route::get('/crear', [PagoController::class, 'create'])
         ->name('create');
@@ -59,4 +62,12 @@ Route::group(['middleware' => ['can:manage-resource,"financiera","view_details"'
     
     Route::patch('/detalle/{idDetalle}', [PagoController::class, 'actualizarDetalle'])
         ->name('actualizar_detalle');
+});
+
+
+Route::group(['middleware' => ['can:manage-resource,"financiera","download"']], function(){
+    Route::get('/export', [PagoController::class, 'export'])
+        ->name('export');
+
+    Route::redirect('/mas/export', '/financiera/pagos/export');
 });
