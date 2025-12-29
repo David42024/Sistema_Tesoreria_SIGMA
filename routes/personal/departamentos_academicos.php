@@ -5,6 +5,9 @@ use App\Http\Controllers\DepartamentoAcademicoController;
 Route::get('/', [DepartamentoAcademicoController::class, 'index'])
     ->name('view');
 
+Route::get('/mas', [DepartamentoAcademicoController::class, 'viewAll'])
+    ->name('viewAll');
+
 Route::group(['middleware' => ['can:manage-resource,"personal","create"']], function(){
     Route::get('/crear', [DepartamentoAcademicoController::class, 'create'])
         ->name('create');
@@ -24,4 +27,11 @@ Route::group(['middleware' => ['can:manage-resource,"personal","edit"']], functi
 Route::group(['middleware' => ['can:manage-resource,"personal","delete"']], function(){
     Route::delete('/', [DepartamentoAcademicoController::class, 'delete'])
         ->name('delete');
+});
+
+Route::group(['middleware' => ['can:manage-resource,"personal","download"']], function(){
+    Route::get('/export', [DepartamentoAcademicoController::class, 'export'])
+        ->name('export');
+
+    Route::redirect('/mas/export', '/departamentos_academicos/export');
 });
