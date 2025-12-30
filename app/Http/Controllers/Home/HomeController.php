@@ -52,7 +52,11 @@ class HomeController extends Controller {
         $usuario = Auth::user();
         $familiar = Familiar::whereEstado(true)->whereIdUsuario($usuario->getKey())->first();
         $header = new FamiliarHeaderComponent();
-        $header->alumnos = $familiar->alumnos->toArray();
+        if (!empty($familiar->alumnos)){
+            $header->alumnos = $familiar->alumnos->toArray();
+        }else{
+            $header->alumnos = [];
+        }
         
         $alumnoSesion = $request->session()->get('alumno');
         $header->alumnoSeleccionado = $alumnoSesion;

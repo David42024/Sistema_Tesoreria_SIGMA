@@ -607,7 +607,7 @@
             $user = Auth::user();
             $familiar = App\Models\Familiar::whereEstado(true)->whereIdUsuario($user->getKey())->first();
             $name = $familiar->primer_nombre . " " . $familiar->apellido_paterno;
-            $cargo = 'Apoderado'
+            $cargo = 'Apoderado';
           @endphp
 
           <span class="text-theme-sm mr-1 block font-medium"> {{ $name }}</span>

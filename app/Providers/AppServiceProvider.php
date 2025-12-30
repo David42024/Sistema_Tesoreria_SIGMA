@@ -110,7 +110,7 @@ class AppServiceProvider extends ServiceProvider
             ],
             'personal' => [
                 'view' => ['Director', 'Secretaria'],
-                'create' => ['Director'],
+                'create' => ['Director','Secretaria'],
                 'edit' => ['Director'],
                 'delete' => ['Director'],
                 'view_details' => ['Director', 'Secretaria'],

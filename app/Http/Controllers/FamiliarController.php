@@ -288,7 +288,7 @@ class FamiliarController extends Controller
             'username' => $request->dni, 
             'tipo' => 'Familiar',
             'email' => $request->correo_electronico ?? uniqid('familiar')."@mail.com",
-            'password' => bcrypt('12345678'),
+            'password' => bcrypt('12345'),
         ]);
         $id_usuario = $user->id_usuario;
     }

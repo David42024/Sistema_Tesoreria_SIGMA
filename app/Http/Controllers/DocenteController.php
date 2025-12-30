@@ -145,7 +145,7 @@ class DocenteController extends Controller
                 $itempersonal->dni,
                 $itempersonal->apellido_paterno . ' ' . $itempersonal->apellido_materno,
                 $itempersonal->primer_nombre . ' ' . $itempersonal->otros_nombres,
-                $itempersonal->departamentos_academicos->nombre
+                $itempersonal->departamentos_academicos->nombre ?? 'N/A'
             ]); 
         }
 

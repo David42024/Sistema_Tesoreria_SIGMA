@@ -6,7 +6,7 @@ Route::get('/', [DocenteController::class,'index'])->name('view');
 
 Route::group(['middleware' => ['can:manage-resource,"personal","create"']],
     function(){
-        Route::get('/crear', [DocenteController::class,'create'])->name('create'); //cambiar a crear xd
+        Route::get('/crear', [DocenteController::class,'create'])->name('create'); 
         Route::put('/crear', [DocenteController::class, 'createNewEntry'])->name('createNewEntry');
     }
 );
