@@ -2,7 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\CRUDTablePage;
+use App\Helpers\ExcelExportHelper;
+use App\Helpers\PDFExportHelper;
+use App\Helpers\RequestHelper;
 use App\Helpers\TableAction;
+use App\Helpers\Tables\AdministrativoHeaderComponent;
+use App\Helpers\Tables\AdministrativoSidebarComponent;
+use App\Helpers\Tables\CautionModalComponent;
+use App\Helpers\Tables\CRUDTableComponent;
+use App\Helpers\Tables\FilterConfig;
+use App\Helpers\Tables\PaginatorRowsSelectorComponent;
+use App\Helpers\Tables\SearchBoxComponent;
+use App\Helpers\Tables\TableButtonComponent;
+use App\Helpers\Tables\TableComponent;
+use App\Helpers\Tables\TablePaginator;
 use App\Models\DepartamentoAcademico;
 use App\Models\Personal;
 use App\Models\User;
@@ -11,45 +25,46 @@ use Illuminate\Validation\Rule;
 
 class DocenteController extends Controller
 {
-    private static function doSearch($sqlColumns, $search, $pagination, $appliedFilters = []){
-        
+    private static function doSearch($sqlColumns, $search, $pagination, $appliedFilters = [])
+    {
+
         $query = Personal::where('estado', '=', '1');
-        
-        if(isset($search)){
+
+        if (isset($search)) {
             $query->whereAny($sqlColumns, 'LIKE', "%{$search}%");
-        } 
+        }
 
         foreach ($appliedFilters as $filter) {
             $columnName = $filter['key'];
             $value = $filter['value'];
-            
+
             // Mapear nombres de columnas de la vista a nombres de BD
             $columnMap = [
                 'ID' => 'id_personal',
                 'Codigo de Personal' => 'codigo_personal',
                 'DNI' => 'dni',
                 'Apellidos' => 'apellido_paterno',
-                'Nombres' => 'primer_nombre', 
+                'Nombres' => 'primer_nombre',
                 'Departamento Académico' => 'departamento'
             ];
-                
-            
+
+
 
             $dbColumn = $columnMap[$columnName] ?? strtolower($columnName);
-            
-            
+
+
             // Aplicar filtro según el tipo de columna
             if ($columnName === 'Apellidos') {
                 // Filtro especial: apellido paterno
                 $query->where(function ($q) use ($value) {
                     $q->where('apellido_paterno', 'LIKE', "%{$value}%")
-                    ->orWhere('apellido_materno', 'LIKE', "%{$value}%");
+                        ->orWhere('apellido_materno', 'LIKE', "%{$value}%");
                 });
             } elseif ($columnName === 'Nombres') {
                 // Filtro especial: primer_nombre o otros_nombres
                 $query->where(function ($q) use ($value) {
                     $q->where('primer_nombre', 'LIKE', "%{$value}%")
-                    ->orWhere('otros_nombres', 'LIKE', "%{$value}%");
+                        ->orWhere('otros_nombres', 'LIKE', "%{$value}%");
                 });
             } elseif ($dbColumn === 'id_personal') {
                 if (is_numeric($value)) {
@@ -62,29 +77,80 @@ class DocenteController extends Controller
             }
         }
 
+        if ($pagination === null) {
+            return $query->get();
+        }
+
         return $query->paginate($pagination);
     }
 
-    public function index(Request $request)
+    public function index(Request $request, bool $long = false)
     {
-        $sqlColumns = ["id_personal","codigo_personal","dni","apellido_paterno","apellido_materno","primer_nombre","otros_nombres","departamento"];
-        $tipoDeRecurso = "personal";
+        $sqlColumns = ["id_personal", "codigo_personal", "dni", "apellido_paterno", "apellido_materno", "primer_nombre", "otros_nombres", "departamento"];
+        $resource = "personal";
 
-        $pagination = $request->input('showing', 10);
-        $paginaActual = $request->input('page', 1);
-        $search = $request->input('search');
+        $params = RequestHelper::extractSearchParams($request);
 
-         $appliedFilters = json_decode($request->input('applied_filters', '[]'), true) ?? [];
+        $page = CRUDTablePage::new()
+            ->title("Docentes")
+            ->sidebar(new AdministrativoSidebarComponent())
+            ->header(new AdministrativoHeaderComponent());
 
-        if (!is_numeric($paginaActual) || $paginaActual <= 0) $paginaActual = 1;
-        if (!is_numeric($pagination) || $pagination <= 0) $pagination = 10;
+        $content = CRUDTableComponent::new()
+            ->title("Docentes");
 
-        $query = DocenteController::doSearch($sqlColumns, $search, $pagination, $appliedFilters);
+        $filterButton = new TableButtonComponent("tablesv2.buttons.filtros");
+        $content->addButton($filterButton);
 
-        if ($paginaActual > $query->lastPage()){
-            $paginaActual = 1;
-            $request['page'] = $paginaActual;
-            $query = DocenteController::doSearch($sqlColumns, $search, $pagination, $appliedFilters);
+        /* Definición de botones */
+        $descargaButton = new TableButtonComponent("tablesv2.buttons.download");
+        $createNewEntryButton = new TableButtonComponent("tablesv2.buttons.createNewEntry", ["redirect" => "docente_create"]);
+
+        if (!$long) {
+            $vermasButton = new TableButtonComponent("tablesv2.buttons.vermas", ["redirect" => "docente_viewAll"]);
+        } else {
+            $vermasButton = new TableButtonComponent("tablesv2.buttons.vermenos", ["redirect" => "docente_view"]);
+            $params->showing = 100;
+        }
+
+        $content->addButton($vermasButton);
+        $content->addButton($descargaButton);
+        $content->addButton($createNewEntryButton);
+
+        /* Paginador */
+        $paginatorRowsSelector = new PaginatorRowsSelectorComponent();
+        if ($long)
+            $paginatorRowsSelector = new PaginatorRowsSelectorComponent([100]);
+        $paginatorRowsSelector->valueSelected = $params->showing;
+        $content->paginatorRowsSelector($paginatorRowsSelector);
+
+        /* Searchbox */
+        $searchBox = new SearchBoxComponent();
+        $searchBox->placeholder = "Buscar...";
+        $searchBox->value = $params->search;
+        $content->searchBox($searchBox);
+
+        /* Modales usados */
+        $cautionModal = CautionModalComponent::new()
+            ->cautionMessage('¿Estás seguro?')
+            ->action('Estás eliminando el Docente')
+            ->columns(['ID', 'DNI', 'Nombre'])
+            ->rows(['id_personal', 'dni', 'nombre_completo'])
+            ->lastWarningMessage('Esta acción no se puede deshacer.')
+            ->confirmButton('Sí, bórralo')
+            ->cancelButton('Cancelar')
+            ->isForm(true)
+            ->dataInputName('id')
+            ->build();
+
+        $page->modals([$cautionModal]);
+
+        /* Lógica del controller */
+        $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
+
+        if ($params->page > $query->lastPage()) {
+            $params->page = 1;
+            $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
         }
 
         $departamentosExistentes = DepartamentoAcademico::where("estado", 1)
@@ -92,65 +158,70 @@ class DocenteController extends Controller
             ->unique()
             ->values();
 
-        $data = [
-            'titulo' => 'Docentes',
-            'columnas' => [
-                'ID',
-                'Codigo de Personal',
-                'DNI',
-                'Apellidos',
-                'Nombres',
-                'Departamento Académico'
-            ],
-            'filas' => [],
-            'showing' => $pagination,
-            'paginaActual' => $paginaActual,
-            'totalPaginas' => $query->lastPage(),
-            'resource' => $tipoDeRecurso,
-            'view' => 'docente_view',
-            'create' => 'docente_create',
-            'edit' => 'docente_edit',
-            'delete' => 'docente_delete',
-            'filters' => $data['columnas'] ?? [],
-            'filterOptions' => [
-                'Departamento Académico' => $departamentosExistentes,
-            ],
-            'actions' => [
-                new TableAction("edit", "docente_edit", $tipoDeRecurso),
-                new TableAction("delete", '', $tipoDeRecurso),
-            ]
+        $filterConfig = new FilterConfig();
+        $filterConfig->filters = [
+            'ID',
+            'Codigo de Personal',
+            'DNI',
+            'Apellidos',
+            'Nombres',
+            'Departamento Académico'
         ];
 
-        if ($request->input("created", false)){
-            $data['created'] = $request->input('created');
+        $filterConfig->filterOptions = [
+            'Departamento Académico' => $departamentosExistentes,
+        ];
+        $content->filterConfig = $filterConfig;
+
+        $table = new TableComponent();
+        $table->columns = [
+            'ID',
+            'Codigo de Personal',
+            'DNI',
+            'Apellidos',
+            'Nombres',
+            'Departamento Académico'
+        ];
+        $table->rows = [];
+
+        foreach ($query as $itempersonal) {
+            array_push(
+                $table->rows,
+                [
+                    $itempersonal->id_personal,
+                    $itempersonal->codigo_personal,
+                    $itempersonal->dni,
+                    $itempersonal->apellido_paterno . ' ' . $itempersonal->apellido_materno,
+                    $itempersonal->primer_nombre . ' ' . $itempersonal->otros_nombres,
+                    $itempersonal->departamentos_academicos->nombre,
+                    // Hidden modal data
+                    'hidden_data' => [
+                        'id_personal' => $itempersonal->id_personal,
+                        'dni' => $itempersonal->dni,
+                        'nombre_completo' => $itempersonal->apellido_paterno . ' ' . $itempersonal->primer_nombre
+                    ]
+                ]
+            );
         }
 
-        if ($request->input("edited", false)){
-            $data['edited'] = $request->input('edited');
-        }
+        $table->actions = [
+            new TableAction("edit", "docente_edit", $resource),
+            new TableAction("delete", '', $resource),
+        ];
 
-        if ($request->input("abort", false)){
-            $data['abort'] = $request->input('abort');
-        }
+        $paginator = new TablePaginator($params->page, $query->lastPage(), []);
+        $table->paginator = $paginator;
 
-        if ($request->input("deleted", false)){
-            $data['deleted'] = $request->input('deleted');
-        }
+        $content->tableComponent($table);
 
-        foreach ($query as $itempersonal){
-            array_push($data['filas'],
-            [
-                $itempersonal->id_personal,
-                $itempersonal->codigo_personal,
-                $itempersonal->dni,
-                $itempersonal->apellido_paterno . ' ' . $itempersonal->apellido_materno,
-                $itempersonal->primer_nombre . ' ' . $itempersonal->otros_nombres,
-                $itempersonal->departamentos_academicos->nombre ?? 'N/A'
-            ]); 
-        }
+        $page->content($content->build());
 
+        return $page->render();
+    }
 
-        return view('gestiones.docente.index', compact('data'));
+    public function viewAll(Request $request)
+    {
+        return $this->index($request, true);
     }
 
     /**
@@ -159,7 +230,7 @@ class DocenteController extends Controller
     public function create()
     {
         $departamentos = DepartamentoAcademico::where('estado', '=', '1')->get();
-        
+
         $estadosCiviles = [
             ['id' => 'S', 'descripcion' => 'Soltero'],
             ['id' => 'C', 'descripcion' => 'Casado'],
@@ -183,7 +254,8 @@ class DocenteController extends Controller
         return view('gestiones.docente.create', compact('data'));
     }
 
-    public function createNewEntry(Request $request){
+    public function createNewEntry(Request $request)
+    {
 
         $request->validate([
             'dni' => 'required|string|max:8|unique:personal,dni', // Asegúrate que 'personal' es el nombre de tu tabla
@@ -199,7 +271,7 @@ class DocenteController extends Controller
             'fecha_ingreso' => 'required|date', // 'fecha_ingreso' es requerido
             'categoria' => 'nullable|string|max:50',
             'departamento' => 'nullable|integer', // 'id_departamento' es int
-        ],[
+        ], [
             'dni.required' => 'El campo DNI es obligatorio.',
             'dni.string' => 'El DNI debe ser una cadena de texto.',
             'dni.max' => 'El DNI no puede exceder los 8 caracteres.',
@@ -244,7 +316,7 @@ class DocenteController extends Controller
             'departamento.integer' => 'El Id de Departamento debe ser un número entero.',
         ]);
 
-        
+
         $departamentoId = $request->input('departamento');
 
 
@@ -281,7 +353,7 @@ class DocenteController extends Controller
         $docente = Personal::findOrFail($id);
 
         $departamentos = DepartamentoAcademico::where('estado', '=', '1')->get();
-        
+
         $estadosCiviles = [
             ['id' => 'S', 'descripcion' => 'Soltero'],
             ['id' => 'C', 'descripcion' => 'Casado'],
@@ -323,7 +395,7 @@ class DocenteController extends Controller
 
     public function editEntry(Request $request, $id)
     {
-        if (!isset($id) ) {
+        if (!isset($id)) {
             return redirect(route('docente_view'));
         }
 
@@ -333,7 +405,7 @@ class DocenteController extends Controller
                 'string',
                 'max:8',
                 Rule::unique('personal', 'dni')->ignore($id, 'id_personal')
-            ], 
+            ],
             'primer_nombre' => 'required|string|max:50',
             'otros_nombres' => 'nullable|string|max:50', // 'otros_nombres' puede ser nulo según tu tabla
             'apellido_paterno' => 'required|string|max:50', // Agregado, ya que es requerido en tu tabla (no 'NULL')
@@ -346,7 +418,7 @@ class DocenteController extends Controller
             'fecha_ingreso' => 'required|date', // 'fecha_ingreso' es requerido
             'categoria' => 'nullable|string|max:50',
             'departamento' => 'nullable|integer', // 'id_departamento' es int
-        ],[
+        ], [
             'dni.required' => 'El campo DNI es obligatorio.',
             'dni.string' => 'El DNI debe ser una cadena de texto.',
             'dni.max' => 'El DNI no puede exceder los 8 caracteres.',
@@ -391,29 +463,29 @@ class DocenteController extends Controller
             'departamento.integer' => 'El Id de Departamento debe ser un número entero.',
         ]);
 
- 
-            $docente = Personal::findOrFail($id);
 
-            $departamentoId = $request->input('departamento');
+        $docente = Personal::findOrFail($id);
 
-            $departamentoNombre = DepartamentoAcademico::findOrFail($departamentoId)->nombre;
+        $departamentoId = $request->input('departamento');
 
-            $docente->dni = $request->input('dni');
-            $docente->primer_nombre = $request->input('primer_nombre');
-            $docente->apellido_paterno = $request->input('apellido_paterno');
-            $docente->apellido_materno = $request->input('apellido_materno');
-            $docente->codigo_personal = $request->input('codigo_de_personal');
-            $docente->direccion = $request->input('direccion');
-            $docente->estado_civil = $request->input('estado_civil');
-            $docente->telefono = $request->input('telefono');
-            $docente->seguro_social = $request->input('seguro_social');
-            $docente->fecha_ingreso = $request->input('fecha_ingreso');
-            $docente->categoria = $request->input('categoria');
-            $docente->id_departamento = $departamentoId;
-            $docente->departamento = $departamentoNombre;
-            $docente->estado = 1;
+        $departamentoNombre = DepartamentoAcademico::findOrFail($departamentoId)->nombre;
 
-            $docente->save();
+        $docente->dni = $request->input('dni');
+        $docente->primer_nombre = $request->input('primer_nombre');
+        $docente->apellido_paterno = $request->input('apellido_paterno');
+        $docente->apellido_materno = $request->input('apellido_materno');
+        $docente->codigo_personal = $request->input('codigo_de_personal');
+        $docente->direccion = $request->input('direccion');
+        $docente->estado_civil = $request->input('estado_civil');
+        $docente->telefono = $request->input('telefono');
+        $docente->seguro_social = $request->input('seguro_social');
+        $docente->fecha_ingreso = $request->input('fecha_ingreso');
+        $docente->categoria = $request->input('categoria');
+        $docente->id_departamento = $departamentoId;
+        $docente->departamento = $departamentoNombre;
+        $docente->estado = 1;
+
+        $docente->save();
 
         return redirect()->route('docente_view', ['edited' => true]);
     }
@@ -428,4 +500,93 @@ class DocenteController extends Controller
     }
 
 
+    public function export(Request $request)
+    {
+        $format = $request->input('export', 'excel');
+        $sqlColumns = ["id_personal", "codigo_personal", "dni", "apellido_paterno", "apellido_materno", "primer_nombre", "otros_nombres", "departamento"];
+
+        $params = RequestHelper::extractSearchParams($request);
+
+        $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
+
+        if ($format === 'excel') {
+            return $this->exportExcel($query);
+        } elseif ($format === 'pdf') {
+            return $this->exportPdf($query);
+        }
+
+        return abort(400, 'Formato no válido');
+    }
+
+    private function exportExcel($docentes)
+    {
+        $headers = ['ID', 'Codigo de Personal', 'DNI', 'Apellidos', 'Nombres', 'Departamento Académico'];
+        $fileName = 'docentes_' . date('Y-m-d_H-i-s') . '.xlsx';
+        $title = 'Docentes';
+        $subject = 'Exportación de Docentes';
+        $description = 'Listado de docentes del sistema';
+
+        return ExcelExportHelper::exportExcel(
+            $fileName,
+            $headers,
+            $docentes,
+            function ($sheet, $row, $docente) {
+                $sheet->setCellValue('A' . $row, $docente->id_personal);
+                $sheet->setCellValue('B' . $row, $docente->codigo_personal);
+                $sheet->setCellValue('C' . $row, $docente->dni);
+                $sheet->setCellValue('D' . $row, $docente->apellido_paterno . ' ' . $docente->apellido_materno);
+                $sheet->setCellValue('E' . $row, $docente->primer_nombre . ' ' . $docente->otros_nombres);
+                $sheet->setCellValue('F' . $row, $docente->departamentos_academicos->nombre);
+            },
+            $title,
+            $subject,
+            $description
+        );
+    }
+
+    private function exportPdf($docentes)
+    {
+        try {
+            if ($docentes instanceof \Illuminate\Database\Eloquent\Collection) {
+                $data = $docentes;
+            } elseif ($docentes instanceof \Illuminate\Pagination\LengthAwarePaginator) {
+                $data = collect($docentes->items());
+            } else {
+                $data = collect($docentes);
+            }
+
+            if ($data->isEmpty()) {
+                return response()->json(['error' => 'No hay datos para exportar'], 400);
+            }
+
+            $fileName = 'docentes_' . date('Y-m-d_H-i-s') . '.pdf';
+
+            $rows = $data->map(function ($docente) {
+                return [
+                    $docente->id_personal ?? 'N/A',
+                    $docente->codigo_personal ?? 'N/A',
+                    $docente->dni ?? 'N/A',
+                    ($docente->apellido_paterno ?? '') . ' ' . ($docente->apellido_materno ?? ''),
+                    ($docente->primer_nombre ?? '') . ' ' . ($docente->otros_nombres ?? ''),
+                    $docente->departamentos_academicos->nombre ?? 'N/A'
+                ];
+            })->toArray();
+
+            $html = PDFExportHelper::generateTableHtml([
+                'title' => 'Docentes',
+                'subtitle' => 'Listado de Docentes',
+                'headers' => ['ID', 'Código', 'DNI', 'Apellidos', 'Nombres', 'Departamento'],
+                'rows' => $rows,
+                'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente',
+            ]);
+
+            return PDFExportHelper::exportPdf($fileName, $html);
+
+        } catch (\Exception $e) {
+            \Log::error('Error en exportPdf: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Error generando PDF: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

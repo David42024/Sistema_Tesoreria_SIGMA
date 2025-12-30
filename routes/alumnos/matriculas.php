@@ -6,7 +6,10 @@ use App\Models\Alumno;
 Route::get('/', [MatriculaController::class, 'index'])
     ->name('view');
 
-Route::group(['middleware' => ['can:manage-resource,"alumnos","create"']], function(){
+Route::get('/mas', [MatriculaController::class, 'viewAll'])
+    ->name('viewAll');
+
+Route::group(['middleware' => ['can:manage-resource,"alumnos","create"']], function () {
     Route::get('/crear', [MatriculaController::class, 'create'])
         ->name('create');
 
@@ -17,7 +20,7 @@ Route::group(['middleware' => ['can:manage-resource,"alumnos","create"']], funct
         ->name('createNewEntry');
 });
 
-Route::group(['middleware' => ['can:manage-resource,"alumnos","edit"']], function(){
+Route::group(['middleware' => ['can:manage-resource,"alumnos","edit"']], function () {
     Route::get('/{id}/editar', [MatriculaController::class, 'edit'])
         ->name('edit');
 
@@ -25,12 +28,12 @@ Route::group(['middleware' => ['can:manage-resource,"alumnos","edit"']], functio
         ->name('editEntry');
 });
 
-Route::group(['middleware' => ['can:manage-resource,"alumnos","delete"']], function(){
+Route::group(['middleware' => ['can:manage-resource,"alumnos","delete"']], function () {
     Route::delete('/', [MatriculaController::class, 'delete'])
         ->name('delete');
 });
 
-Route::group(['middleware' => ['can:manage-resource,"alumnos","download"']], function(){
+Route::group(['middleware' => ['can:manage-resource,"alumnos","download"']], function () {
     Route::get('/export', [MatriculaController::class, 'export'])
         ->name('export');
 

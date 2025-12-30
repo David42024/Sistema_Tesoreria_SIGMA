@@ -2,7 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\CRUDTablePage;
+use App\Helpers\ExcelExportHelper;
+use App\Helpers\PDFExportHelper;
+use App\Helpers\RequestHelper;
 use App\Helpers\TableAction;
+use App\Helpers\Tables\AdministrativoHeaderComponent;
+use App\Helpers\Tables\AdministrativoSidebarComponent;
+use App\Helpers\Tables\CautionModalComponent;
+use App\Helpers\Tables\CRUDTableComponent;
+use App\Helpers\Tables\FilterConfig;
+use App\Helpers\Tables\PaginatorRowsSelectorComponent;
+use App\Helpers\Tables\SearchBoxComponent;
+use App\Helpers\Tables\TableButtonComponent;
+use App\Helpers\Tables\TableComponent;
+use App\Helpers\Tables\TablePaginator;
 use App\Models\Alumno;
 use App\Models\Grado;
 use App\Models\Matricula;
@@ -13,27 +27,28 @@ use Illuminate\Http\Request;
 
 class MatriculaController extends Controller
 {
-    
-    private static function doSearch($sqlColumns, $search, $pagination, $appliedFilters = []){
-        
+
+    private static function doSearch($sqlColumns, $search, $pagination, $appliedFilters = [])
+    {
+
         $query = Matricula::where('estado', '=', '1')
-        ->whereHas('alumno', fn($q) => $q->where('estado', 1))
-        ->whereHas('grado', fn($q) => $q->where('estado', 1))
-            ->whereExists(function($sub){
-            $sub->select(\DB::raw(1))
-                ->from('secciones')
-                ->whereColumn('secciones.id_grado', 'matriculas.id_grado')
-                ->whereColumn('secciones.nombreSeccion', 'matriculas.nombreSeccion')
-                ->where('secciones.estado', 1);
-        });
-        
+            ->whereHas('alumno', fn($q) => $q->where('estado', 1))
+            ->whereHas('grado', fn($q) => $q->where('estado', 1))
+            ->whereExists(function ($sub) {
+                $sub->select(\DB::raw(1))
+                    ->from('secciones')
+                    ->whereColumn('secciones.id_grado', 'matriculas.id_grado')
+                    ->whereColumn('secciones.nombreSeccion', 'matriculas.nombreSeccion')
+                    ->where('secciones.estado', 1);
+            });
+
         if (isset($search)) {
             $query->where(function ($q) use ($search) {
                 // Buscar en columnas propias
                 $q->where('id_matricula', 'LIKE', "%{$search}%")
-                ->orWhere('año_escolar', 'LIKE', "%{$search}%")
-                ->orWhere('escala', 'LIKE', "%{$search}%")
-                ->orWhere('observaciones', 'LIKE', "%{$search}%");
+                    ->orWhere('año_escolar', 'LIKE', "%{$search}%")
+                    ->orWhere('escala', 'LIKE', "%{$search}%")
+                    ->orWhere('observaciones', 'LIKE', "%{$search}%");
 
                 // Buscar en la relación Alumno
                 $q->orWhereHas('alumno', function ($sub) use ($search) {
@@ -55,7 +70,7 @@ class MatriculaController extends Controller
             });
         }
 
-        
+
 
         foreach ($appliedFilters as $filter) {
             $columnName = $filter['key'];
@@ -81,12 +96,12 @@ class MatriculaController extends Controller
                 $query->whereHas('alumno', function ($q) use ($value) {
                     $q->where(function ($q2) use ($value) {
                         $q2->where('apellido_paterno', 'LIKE', "%{$value}%")
-                        ->orWhere('apellido_materno', 'LIKE', "%{$value}%")
-                        ->orWhere('primer_nombre', 'LIKE', "%{$value}%")
-                        ->orWhere('otros_nombres', 'LIKE', "%{$value}%");
+                            ->orWhere('apellido_materno', 'LIKE', "%{$value}%")
+                            ->orWhere('primer_nombre', 'LIKE', "%{$value}%")
+                            ->orWhere('otros_nombres', 'LIKE', "%{$value}%");
                     });
                 });
-            }  elseif ($dbColumn === 'grado') {
+            } elseif ($dbColumn === 'grado') {
                 $query->whereHas('grado', function ($q) use ($value) {
                     $q->where('nombre_grado', 'LIKE', "%{$value}%");
                 });
@@ -105,109 +120,161 @@ class MatriculaController extends Controller
             }
         }
 
+        if ($pagination === null) {
+            return $query->get();
+        }
         return $query->paginate($pagination);
     }
 
 
-   
-    public function index(Request $request)
+    public function viewAll(Request $request)
     {
-        $sqlColumns = ["id_matricula","fecha_matricula","año_escolar","id_alumno","id_grado","nombreSeccion","escala","observaciones",];
-        $tipoDeRecurso = "alumnos";
+        return $this->index($request, true);
+    }
+    public function index(Request $request, bool $long = false)
+    {
+        $sqlColumns = ["id_matricula", "fecha_matricula", "año_escolar", "id_alumno", "id_grado", "nombreSeccion", "escala", "observaciones",];
+        $resource = "alumnos";
 
+        $params = RequestHelper::extractSearchParams($request);
 
-        $pagination = $request->input('showing', 10);
-        $paginaActual = $request->input('page', 1);
-        $search = $request->input('search');
+        $page = CRUDTablePage::new()
+            ->title("Matrículas")
+            ->sidebar(new AdministrativoSidebarComponent())
+            ->header(new AdministrativoHeaderComponent());
 
-         $appliedFilters = json_decode($request->input('applied_filters', '[]'), true) ?? [];
+        $content = CRUDTableComponent::new()
+            ->title("Matrículas");
 
-        if (!is_numeric($paginaActual) || $paginaActual <= 0) $paginaActual = 1;
-        if (!is_numeric($pagination) || $pagination <= 0) $pagination = 10;
+        $filterButton = new TableButtonComponent("tablesv2.buttons.filtros");
+        $content->addButton($filterButton);
 
-        $query = MatriculaController::doSearch($sqlColumns, $search, $pagination, $appliedFilters);
+        /* Definición de botones */
+        $descargaButton = new TableButtonComponent("tablesv2.buttons.download");
+        $createNewEntryButton = new TableButtonComponent("tablesv2.buttons.createNewEntry", ["redirect" => "matricula_create"]);
 
-        if ($paginaActual > $query->lastPage()){
-            $paginaActual = 1;
-            $request['page'] = $paginaActual;
-            $query = MatriculaController::doSearch($sqlColumns, $search, $pagination, $appliedFilters);
+        if (!$long) {
+            $vermasButton = new TableButtonComponent("tablesv2.buttons.vermas", ["redirect" => "matricula_viewAll"]);
+        } else {
+            $vermasButton = new TableButtonComponent("tablesv2.buttons.vermenos", ["redirect" => "matricula_view"]);
+            $params->showing = 100;
         }
 
-        //Para los selects
+        $content->addButton($vermasButton);
+        $content->addButton($descargaButton);
+        $content->addButton($createNewEntryButton);
 
-        $gradosExistentes = Grado::where("estado",1)
-        ->pluck("nombre_grado")->unique()->values();
+        /* Paginador */
+        $paginatorRowsSelector = new PaginatorRowsSelectorComponent();
+        if ($long)
+            $paginatorRowsSelector = new PaginatorRowsSelectorComponent([100]);
+        $paginatorRowsSelector->valueSelected = $params->showing;
+        $content->paginatorRowsSelector($paginatorRowsSelector);
 
-        $seccionesExistentes = Seccion::where("estado",1)
-        ->pluck("nombreSeccion")->unique()->values();
+        /* Searchbox */
+        $searchBox = new SearchBoxComponent();
+        $searchBox->placeholder = "Buscar...";
+        $searchBox->value = $params->search;
+        $content->searchBox($searchBox);
 
-         $data = [
-            'titulo' => 'Matriculas',
-            'columnas' => [
-                'ID',
-                'Fecha Matricula',
-                'Año Escolar',
-                'Alumno',
-                'Nivel',
-                'Grado',
-                'Seccion',
-                'Escala',
-                'Observaciones'
-            ],
-            'filas' => [],
-            'showing' => $pagination,
-            'paginaActual' => $paginaActual,
-            'totalPaginas' => $query->lastPage(),
-            'resource' => $tipoDeRecurso,
-            'view' => 'matricula_view',
-            'create' => 'matricula_create',
-            'edit' => 'matricula_edit',
-            'delete' => 'matricula_delete',
-            'filters' => $data['columnas'] ?? [],
-            'filterOptions' => [
-                'Grado' => $gradosExistentes,
-                'Seccion' => $seccionesExistentes,
-            ],
-            'actions' => [
-                new TableAction("edit", "matricula_edit", $tipoDeRecurso),
-                new TableAction("delete", '', $tipoDeRecurso),
-            ]
+        /* Modales usados */
+        $cautionModal = CautionModalComponent::new()
+            ->cautionMessage('¿Estás seguro?')
+            ->action('Estás eliminando la Matrícula')
+            ->columns(['ID', 'Alumno', 'Grado'])
+            ->rows(['id_matricula', 'alumno_nombre', 'grado_nombre']) // Ajustar según lo que queramos mostrar
+            ->lastWarningMessage('Esta acción no se puede deshacer.')
+            ->confirmButton('Sí, bórralo')
+            ->cancelButton('Cancelar')
+            ->isForm(true)
+            ->dataInputName('id')
+            ->build();
+
+        $page->modals([$cautionModal]);
+
+        /* Lógica del controller */
+        $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
+
+        if ($params->page > $query->lastPage()) {
+            $params->page = 1;
+            $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
+        }
+
+        // Filtros
+        $gradosExistentes = Grado::where("estado", 1)
+            ->pluck("nombre_grado")->unique()->values();
+
+        $seccionesExistentes = Seccion::where("estado", 1)
+            ->pluck("nombreSeccion")->unique()->values();
+
+        $filterConfig = new FilterConfig();
+        $filterConfig->filters = [
+            "ID",
+            "Fecha de matricula",
+            "Año Escolar",
+            "Alumno",
+            "Grado",
+            "Seccion",
+            "Escala",
+            "Observaciones"
         ];
 
-        if ($request->input("created", false)){
-            $data['created'] = $request->input('created');
+        $filterConfig->filterOptions = [
+            'Grado' => $gradosExistentes,
+            'Seccion' => $seccionesExistentes,
+        ];
+        $content->filterConfig = $filterConfig;
+
+        $table = new TableComponent();
+        $table->columns = [
+            'ID',
+            'Fecha Matricula',
+            'Año Escolar',
+            'Alumno',
+            'Nivel',
+            'Grado',
+            'Seccion',
+            'Escala',
+            'Observaciones'
+        ];
+        $table->rows = [];
+
+        foreach ($query as $itemmatricula) {
+            array_push(
+                $table->rows,
+                [
+                    $itemmatricula->id_matricula,
+                    $itemmatricula->fecha_matricula,
+                    $itemmatricula->año_escolar,
+                    $itemmatricula->alumno->apellido_paterno . ' ' . $itemmatricula->alumno->apellido_materno . ' ' . $itemmatricula->alumno->primer_nombre . ' ' . $itemmatricula->alumno->otros_nombres,
+                    $itemmatricula->grado->nivelEducativo->nombre_nivel,
+                    $itemmatricula->grado->nombre_grado,
+                    $itemmatricula->nombreSeccion,
+                    $itemmatricula->escala,
+                    $itemmatricula->observaciones,
+                    // Hidden fields for modal
+                    'hidden_data' => [
+                        'id_matricula' => $itemmatricula->id_matricula,
+                        'alumno_nombre' => $itemmatricula->alumno->apellido_paterno . ' ...',
+                        'grado_nombre' => $itemmatricula->grado->nombre_grado
+                    ]
+                ]
+            );
         }
 
-        if ($request->input("edited", false)){
-            $data['edited'] = $request->input('edited');
-        }
+        $table->actions = [
+            new TableAction("edit", "matricula_edit", $resource),
+            new TableAction("delete", '', $resource),
+        ];
 
-        if ($request->input("abort", false)){
-            $data['abort'] = $request->input('abort');
-        }
+        $paginator = new TablePaginator($params->page, $query->lastPage(), []);
+        $table->paginator = $paginator;
 
-        if ($request->input("deleted", false)){
-            $data['deleted'] = $request->input('deleted');
-        }
+        $content->tableComponent($table);
 
-        foreach ($query as $itemmatricula){
-            array_push($data['filas'],
-            [
-                $itemmatricula->id_matricula,
-                $itemmatricula->fecha_matricula,
-                $itemmatricula->año_escolar,
-                $itemmatricula->alumno->apellido_paterno . ' ' . $itemmatricula->alumno->apellido_materno . ' '. $itemmatricula->alumno->primer_nombre . ' '. $itemmatricula->alumno->otros_nombres ,
-                $itemmatricula->grado->nivelEducativo->nombre_nivel,
-                $itemmatricula->grado->nombre_grado,
-                $itemmatricula->nombreSeccion,
-                $itemmatricula->escala,
-                $itemmatricula->observaciones
-            ]); 
-        }
+        $page->content($content->build());
 
-
-        return view('gestiones.matricula.index', compact('data')); 
-
+        return $page->render();
     }
 
     /**
@@ -221,7 +288,7 @@ class MatriculaController extends Controller
 
         $alumnos = Alumno::where("estado", "=", "1")->get();
 
-        $resultado_alumnos = $alumnos->map(function($alumno) {
+        $resultado_alumnos = $alumnos->map(function ($alumno) {
             return [
                 'id' => $alumno->id_alumno, // o el campo de tu PK
                 'nombres' => trim(
@@ -238,17 +305,17 @@ class MatriculaController extends Controller
             ['id' => '2026', 'descripcion' => '2026']
         ];
 
-        $niveles = NivelEducativo::where("estado","=","1")
+        $niveles = NivelEducativo::where("estado", "=", "1")
             ->select('id_nivel', 'nombre_nivel')
             ->distinct()
             ->get();
 
-        $grados = Grado::where("estado","=","1")
+        $grados = Grado::where("estado", "=", "1")
             ->select('id_grado', 'nombre_grado', 'id_nivel')
             ->distinct()
             ->get();
 
-        $secciones = Seccion::where("estado","=","1")
+        $secciones = Seccion::where("estado", "=", "1")
             ->select('id_grado', 'nombreSeccion')
             ->distinct()
             ->get();
@@ -279,28 +346,28 @@ class MatriculaController extends Controller
     }
 
     public function createNewEntry(Request $request)
-{
-    $seccionData = $this->parseSeccionValue($request->seccion);
+    {
+        $seccionData = $this->parseSeccionValue($request->seccion);
 
-    $request->validate([
-        'alumno' => [
-            'required',
-            $this->validarAlumnoYaMatriculado($request),
-        ],
-        'año_escolar' => 'required',
-        'nivel_educativo' => 'required',
-        'grado' => 'required',
-        'seccion' => [
-            'required',
-            $this->validarCombinacionUnica($request, $seccionData),
-        ],
-    ], [
-        'alumno.required' => 'El alumno es obligatorio.',
-        'año_escolar.required' => 'El año escolar es obligatorio.',
-        'nivel_educativo.required' => 'El nivel educativo es obligatorio.',
-        'grado.required' => 'El grado es obligatorio.',
-        'seccion.required' => 'La sección es obligatoria.',
-    ]);
+        $request->validate([
+            'alumno' => [
+                'required',
+                $this->validarAlumnoYaMatriculado($request),
+            ],
+            'año_escolar' => 'required',
+            'nivel_educativo' => 'required',
+            'grado' => 'required',
+            'seccion' => [
+                'required',
+                $this->validarCombinacionUnica($request, $seccionData),
+            ],
+        ], [
+            'alumno.required' => 'El alumno es obligatorio.',
+            'año_escolar.required' => 'El año escolar es obligatorio.',
+            'nivel_educativo.required' => 'El nivel educativo es obligatorio.',
+            'grado.required' => 'El grado es obligatorio.',
+            'seccion.required' => 'La sección es obligatoria.',
+        ]);
 
         $matricula = Matricula::create([
             'id_alumno' => $request->alumno,
@@ -311,7 +378,7 @@ class MatriculaController extends Controller
             'escala' => $request->escala,
             'observaciones' => $request->observaciones
         ]);
-    
+
         $matricula->generarDeudas();
 
         return redirect(route('matricula_view', ['created' => true]));
@@ -353,7 +420,7 @@ class MatriculaController extends Controller
         }
 
         $matricula = Matricula::findOrFail($id);
-        
+
         $alumno = $matricula->alumno;
         $año = $matricula->año_escolar;
 
@@ -366,7 +433,7 @@ class MatriculaController extends Controller
         $fecha_matricula = $matricula->fecha_matricula;
         $alumnos = Alumno::where("estado", "=", "1")->get();
 
-        $resultado_alumnos = $alumnos->map(function($alumno) {
+        $resultado_alumnos = $alumnos->map(function ($alumno) {
             return [
                 'id' => $alumno->id_alumno, // o el campo de tu PK
                 'nombres' => trim(
@@ -383,22 +450,22 @@ class MatriculaController extends Controller
             ['id' => '2026', 'descripcion' => '2026']
         ];
 
-        $niveles = NivelEducativo::where("estado","=","1")
+        $niveles = NivelEducativo::where("estado", "=", "1")
             ->select('id_nivel', 'nombre_nivel')
             ->distinct()
             ->get();
 
-        $grados = Grado::where("estado","=","1")
+        $grados = Grado::where("estado", "=", "1")
             ->select('id_grado', 'nombre_grado', 'id_nivel')
             ->distinct()
             ->get();
 
-        $secciones = Seccion::where("estado","=","1")
+        $secciones = Seccion::where("estado", "=", "1")
             ->select('id_grado', 'nombreSeccion')
             ->distinct()
             ->get();
-        
-        
+
+
 
         $data = [
             'return' => route('grado_view', ['abort' => true]),
@@ -413,12 +480,12 @@ class MatriculaController extends Controller
                 'año_escolar' => $año,
                 'nivel_educativo' => $nivel_educativo->id_nivel,
                 'grado' => $grado->id_grado,
-                'seccion' =>  $seccion,
+                'seccion' => $seccion,
                 'observaciones' => $observaciones,
                 'fecha_matricula' => $fecha_matricula
             ]
         ];
-        
+
         return view('gestiones.matricula.edit', compact('data'));
     }
 
@@ -444,7 +511,7 @@ class MatriculaController extends Controller
                         ->where('id_grado', $seccionData['id_grado'])
                         ->where('nombreSeccion', $seccionData['nombreSeccion'])
                         ->exists();
-                    
+
                     if ($exists) {
                         $fail('Esta combinación de alumno, año escolar y sección ya existe.');
                     }
@@ -497,7 +564,7 @@ class MatriculaController extends Controller
 
         // Separar la clave compuesta
         $parts = explode('|', $seccionValue);
-        
+
         if (count($parts) !== 2) {
             throw new \InvalidArgumentException('Formato de sección inválido. Esperado: id_grado|nombreSeccion');
         }
@@ -531,7 +598,7 @@ class MatriculaController extends Controller
         // Las clases empiezan en marzo, así que:
         // - Si estamos en enero o febrero, contar desde marzo
         // - Si estamos en marzo-diciembre, contar desde mes actual
-        $mesActual = (int)date('n'); // 1-12
+        $mesActual = (int) date('n'); // 1-12
         $mesInicio = ($mesActual < 3) ? 3 : $mesActual; // Si es enero o febrero, empezar desde marzo
         $cuotasPendientes = max(0, 12 - $mesInicio + 1);
 
@@ -547,4 +614,105 @@ class MatriculaController extends Controller
     }
 
 
+    public function export(Request $request)
+    {
+        $format = $request->input('export', 'excel');
+        $sqlColumns = ["id_matricula", "fecha_matricula", "año_escolar", "id_alumno", "id_grado", "nombreSeccion", "escala", "observaciones",];
+
+        $params = RequestHelper::extractSearchParams($request);
+
+        // Para ambos formatos, obtener todos los registros (sin paginación)
+        // doSearch expects pagination number, but if we pass null it might break in MatriculaController implementation.
+        // MatriculaController::doSearch uses $query->paginate($pagination).
+        // I need to modifying doSearch to handle null pagination OR create a specific query for export.
+        // The easiest way is to modify doSearch to handle null pagination, similar to NivelEducativoController.
+
+        $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
+
+        if ($format === 'excel') {
+            return $this->exportExcel($query);
+        } elseif ($format === 'pdf') {
+            return $this->exportPdf($query);
+        }
+
+        return abort(400, 'Formato no válido');
+    }
+
+    private function exportExcel($matriculas)
+    {
+        $headers = ['ID', 'Fecha Matricula', 'Año Escolar', 'Alumno', 'Nivel', 'Grado', 'Seccion', 'Escala', 'Observaciones'];
+        $fileName = 'matriculas_' . date('Y-m-d_H-i-s') . '.xlsx';
+        $title = 'Matrículas';
+        $subject = 'Exportación de Matrículas';
+        $description = 'Listado de matrículas del sistema';
+
+        return ExcelExportHelper::exportExcel(
+            $fileName,
+            $headers,
+            $matriculas,
+            function ($sheet, $row, $matricula) {
+                $sheet->setCellValue('A' . $row, $matricula->id_matricula);
+                $sheet->setCellValue('B' . $row, $matricula->fecha_matricula);
+                $sheet->setCellValue('C' . $row, $matricula->año_escolar);
+                $sheet->setCellValue('D' . $row, $matricula->alumno->apellido_paterno . ' ' . $matricula->alumno->apellido_materno . ' ' . $matricula->alumno->primer_nombre);
+                $sheet->setCellValue('E' . $row, $matricula->grado->nivelEducativo->nombre_nivel);
+                $sheet->setCellValue('F' . $row, $matricula->grado->nombre_grado);
+                $sheet->setCellValue('G' . $row, $matricula->nombreSeccion);
+                $sheet->setCellValue('H' . $row, $matricula->escala);
+                $sheet->setCellValue('I' . $row, $matricula->observaciones);
+            },
+            $title,
+            $subject,
+            $description
+        );
+    }
+
+    private function exportPdf($matriculas)
+    {
+        try {
+            if ($matriculas instanceof \Illuminate\Database\Eloquent\Collection) {
+                $data = $matriculas;
+            } elseif ($matriculas instanceof \Illuminate\Pagination\LengthAwarePaginator) {
+                $data = collect($matriculas->items());
+            } else {
+                $data = collect($matriculas);
+            }
+
+            if ($data->isEmpty()) {
+                return response()->json(['error' => 'No hay datos para exportar'], 400);
+            }
+
+            $fileName = 'matriculas_' . date('Y-m-d_H-i-s') . '.pdf';
+
+            $rows = $data->map(function ($matricula) {
+                return [
+                    $matricula->id_matricula ?? 'N/A',
+                    $matricula->fecha_matricula ?? 'N/A',
+                    $matricula->año_escolar ?? 'N/A',
+                    ($matricula->alumno->apellido_paterno ?? '') . ' ' . ($matricula->alumno->primer_nombre ?? ''),
+                    $matricula->grado->nivelEducativo->nombre_nivel ?? 'N/A',
+                    $matricula->grado->nombre_grado ?? 'N/A',
+                    $matricula->nombreSeccion ?? 'N/A',
+                    $matricula->escala ?? 'N/A',
+                    $matricula->observaciones ?? ''
+                ];
+            })->toArray();
+
+            $html = PDFExportHelper::generateTableHtml([
+                'title' => 'Matrículas',
+                'subtitle' => 'Listado de Matrículas',
+                'headers' => ['ID', 'Fecha', 'Año', 'Alumno', 'Nivel', 'Grado', 'Sec', 'Esc', 'Obs'],
+                'rows' => $rows,
+                'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente',
+            ]);
+
+            return PDFExportHelper::exportPdf($fileName, $html);
+
+        } catch (\Exception $e) {
+            \Log::error('Error en exportPdf: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Error generando PDF: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

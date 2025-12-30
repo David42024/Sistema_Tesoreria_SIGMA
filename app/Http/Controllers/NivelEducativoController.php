@@ -28,7 +28,8 @@ use \Illuminate\Http\Request;
 
 class NivelEducativoController extends Controller
 {
-    private static function doSearch($sqlColumns, $search, $maxEntriesShow, $appliedFilters = []){
+    private static function doSearch($sqlColumns, $search, $maxEntriesShow, $appliedFilters = [])
+    {
         $columnMap = [
             'ID' => 'id_nivel',
             'Nivel' => 'nombre_nivel',
@@ -39,22 +40,24 @@ class NivelEducativoController extends Controller
 
         FilteredSearchQuery::fromQuery($query, $sqlColumns, $search, $appliedFilters, $columnMap);
 
-        if ($maxEntriesShow == null) return $query->get();
+        if ($maxEntriesShow == null)
+            return $query->get();
 
         return $query->paginate($maxEntriesShow);
     }
-    
-    public function index(Request $request, $long = false){
+
+    public function index(Request $request, $long = false)
+    {
         $sqlColumns = ['id_nivel', 'nombre_nivel', 'descripcion'];
         $resource = 'academica';
 
         $params = RequestHelper::extractSearchParams($request);
-        
+
         $page = CRUDTablePage::new()
             ->title("Niveles Educativos")
             ->sidebar(new AdministrativoSidebarComponent())
             ->header(new AdministrativoHeaderComponent());
-        
+
         $content = CRUDTableComponent::new()
             ->title("Niveles Educativos");
 
@@ -66,10 +69,11 @@ class NivelEducativoController extends Controller
         $descargaButton = new TableButtonComponent("tablesv2.buttons.download");
         $createNewEntryButton = new TableButtonComponent("tablesv2.buttons.createNewEntry", ["redirect" => "nivel_educativo_create"]);
 
-        if (!$long){
+        if (!$long) {
             $vermasButton = new TableButtonComponent("tablesv2.buttons.vermas", ["redirect" => "nivel_educativo_viewAll"]);
         } else {
             $vermasButton = new TableButtonComponent("tablesv2.buttons.vermenos", ["redirect" => "nivel_educativo_view"]);
+            $params->showing = 100;
         }
 
         $content->addButton($vermasButton);
@@ -78,7 +82,8 @@ class NivelEducativoController extends Controller
 
         /* Paginador */
         $paginatorRowsSelector = new PaginatorRowsSelectorComponent();
-        if ($long) $paginatorRowsSelector = new PaginatorRowsSelectorComponent([100]);
+        if ($long)
+            $paginatorRowsSelector = new PaginatorRowsSelectorComponent([100]);
         $paginatorRowsSelector->valueSelected = $params->showing;
         $content->paginatorRowsSelector($paginatorRowsSelector);
 
@@ -104,10 +109,10 @@ class NivelEducativoController extends Controller
         $page->modals([$cautionModal]);
 
         /* Lógica del controller */
-        
+
         $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
 
-        if ($params->page > $query->lastPage()){
+        if ($params->page > $query->lastPage()) {
             $params->page = 1;
             $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
         }
@@ -119,24 +124,28 @@ class NivelEducativoController extends Controller
 
         $filterConfig = new FilterConfig();
         $filterConfig->filters = [
-            "ID", "Nivel", "Descripción"
+            "ID",
+            "Nivel",
+            "Descripción"
         ];
         $filterConfig->filterOptions = [
             "Nivel" => $nivelesExistentes
         ];
         $content->filterConfig = $filterConfig;
-        
+
         $table = new TableComponent();
         $table->columns = ["ID", "Nivel", "Descripción"];
         $table->rows = [];
 
-        foreach ($query as $nivel){
-            array_push($table->rows,
-            [
-                $nivel->id_nivel,
-                $nivel->nombre_nivel,
-                $nivel->descripcion
-            ]); 
+        foreach ($query as $nivel) {
+            array_push(
+                $table->rows,
+                [
+                    $nivel->id_nivel,
+                    $nivel->nombre_nivel,
+                    $nivel->descripcion
+                ]
+            );
         }
         $table->actions = [
             new TableAction('edit', 'nivel_educativo_edit', $resource),
@@ -153,11 +162,13 @@ class NivelEducativoController extends Controller
         return $page->render();
     }
 
-    public function viewAll(Request $request){
+    public function viewAll(Request $request)
+    {
         return static::index($request, true);
     }
 
-    public function create(Request $request){
+    public function create(Request $request)
+    {
         $data = [
             'return' => route('nivel_educativo_view', ['abort' => true]),
         ];
@@ -165,11 +176,12 @@ class NivelEducativoController extends Controller
         return view('gestiones.nivel_educativo.create', compact('data'));
     }
 
-    public function createNewEntry(Request $request){
+    public function createNewEntry(Request $request)
+    {
         $request->validate([
             'nombre' => 'required|max:50',
             'descripción' => 'required|max:255'
-        ],[
+        ], [
             'nombre.required' => 'Ingrese un nombre válido.',
             'descripción.required' => 'Ingrese una descripción válida.',
             'nombre.max' => 'El nombre no puede superar los 50 caracteres.',
@@ -187,8 +199,9 @@ class NivelEducativoController extends Controller
         return redirect(route('nivel_educativo_view', ['created' => true]));
     }
 
-    public function edit(Request $request, $id){
-        if (!isset($id)){
+    public function edit(Request $request, $id)
+    {
+        if (!isset($id)) {
             return redirect(route('nivel_educativo_view'));
         }
 
@@ -205,14 +218,15 @@ class NivelEducativoController extends Controller
         return view('gestiones.nivel_educativo.edit', compact('data'));
     }
 
-    public function editEntry(Request $request, $id){
-        if (!isset($id)){
+    public function editEntry(Request $request, $id)
+    {
+        if (!isset($id)) {
             return redirect(route('nivel_educativo_view'));
         }
 
         $requested = NivelEducativo::find($id);
 
-        if (isset($requested)){
+        if (isset($requested)) {
             $newNombre = $request->input('nombre');
             $newDescripcion = $request->input('descripción');
 
@@ -222,25 +236,26 @@ class NivelEducativoController extends Controller
         return redirect(route('nivel_educativo_view', ['edited' => true]));
     }
 
-    public function delete(Request $request){
+    public function delete(Request $request)
+    {
         $id = $request->input('id');
 
         $requested = NivelEducativo::find($id);
         $requested->update(['estado' => '0']);
 
-        $grados = Grado::where('id_nivel','=',$request->input('id'))->get();
+        $grados = Grado::where('id_nivel', '=', $request->input('id'))->get();
 
-        foreach($grados as $g){
+        foreach ($grados as $g) {
             $g->estado = 0;
             $g->save();
             Seccion::where('id_grado', $g->id_grado)->update(['estado' => 0]);
         }
 
-        
+
 
         return redirect(route('nivel_educativo_view', ['deleted' => true]));
     }
-    
+
     public function export(Request $request)
     {
         $format = $request->input('export', 'excel');
@@ -273,7 +288,7 @@ class NivelEducativoController extends Controller
             $fileName,
             $headers,
             $niveles,
-            function($sheet, $row, $nivel) {
+            function ($sheet, $row, $nivel) {
                 $sheet->setCellValue('A' . $row, $nivel->id_nivel);
                 $sheet->setCellValue('B' . $row, $nivel->nombre_nivel);
                 $sheet->setCellValue('C' . $row, $nivel->descripcion);
@@ -311,7 +326,7 @@ class NivelEducativoController extends Controller
             $fileName = 'niveles_educativos_' . date('Y-m-d_H-i-s') . '.pdf';
 
             // 🔥 CORRECCIÓN: Usar la collection directamente
-            $rows = $data->map(function($nivel) {
+            $rows = $data->map(function ($nivel) {
                 return [
                     $nivel->id_nivel ?? 'N/A',
                     $nivel->nombre_nivel ?? 'N/A',
