@@ -9,15 +9,15 @@ use App\Helpers\Exporter\ExcelExporter;
 
 class ExporterFactory implements IExporterFactory
 {
-    public const PDF_VIEW_TEMPLATE = "export.pdf";
+    public const VIEW_TEMPLATE = "export.pdf";
 
     private ITableExporter $PDF_EXPORTER;
     private ITableExporter $EXCEL_EXPORTER;
 
     public function __construct()
     {
-        $this->PDF_EXPORTER = new PDFExporter(self::PDF_VIEW_TEMPLATE);
-        $this->EXCEL_EXPORTER = new ExcelExporter();
+        $this->PDF_EXPORTER = new PDFExporter(self::VIEW_TEMPLATE);
+        $this->EXCEL_EXPORTER = new ExcelExporter(self::VIEW_TEMPLATE);
     }
 
     public function getExporter(string $type): ITableExporter

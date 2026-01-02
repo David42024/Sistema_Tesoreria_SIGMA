@@ -9,18 +9,19 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ExcelAdapter implements FromView
 {
+    private string $template;
     private ExportRequest $request;
 
-    public function __construct(ExportRequest $request)
+    public function __construct(string $template, ExportRequest $request)
     {
+        $this->template = $template;
         $this->request = $request;
     }
 
     public function view(): View
     {
-        return view('export.pdf', [
+        return view($this->template, [
             'title' => $this->request->title(),
-            'date' => Carbon::now()->format('d/m/Y H:i:s'),
             'data' => $this->request->data(),
             'headers' => $this->request->headers(),
         ]);
@@ -29,14 +30,16 @@ class ExcelAdapter implements FromView
 
 class ExcelExporter implements ITableExporter
 {
-    public function __construct()
-    {
+    private string $template;
 
+    public function __construct(string $template)
+    {
+        $this->template = $template;
     }
 
     public function export(ExportRequest $request)
     {
-        $adapter = new ExcelAdapter($request);
+        $adapter = new ExcelAdapter($this->template, $request);
         return Excel::download($adapter, ($request->option('filename', 'table') . '.xlsx'));
     }
 
