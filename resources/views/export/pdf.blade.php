@@ -78,12 +78,11 @@
         @if(!empty($title))
             <h2>{{ $title }}</h2>
         @endif
-        <p>Reporte generado el {{ $date }}</p>
     </div>
 
     <div class="info-section">
         <p><strong>Total de registros:</strong> {{ count($data) }}</p>
-        <p><strong>Fecha de generación:</strong> {{ $date }}</p>
+        <p><strong>Fecha de generación:</strong> {{ now()->format('d/m/Y H:i:s') }}</p>
     </div>
 
     @include('export.table')
