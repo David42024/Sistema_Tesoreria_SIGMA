@@ -48,12 +48,11 @@ Route::prefix('solicitud-prematricula')->group(function () {
         ->name('solicitud_prematricula.exito');
 });
 
-// === RUTAS PARA PRE-APODERADO ===
-Route::middleware(['auth'])->group(function () {
-    Route::get('/prematricula/estado', [SolicitudPrematriculaController::class, 'estadoSolicitud'])
+Route::middleware(['auth'])->prefix('preapoderado')->group(function () {
+    Route::get('/estado', [SolicitudPrematriculaController::class, 'estadoSolicitud'])
         ->name('pre_apoderado.estado_solicitud');
-});
-
-Route::get('/test-solicitud', function () {
-    return 'Funciona';
+    Route::get('/nueva-solicitud', [SolicitudPrematriculaController::class, 'nuevaSolicitud'])
+        ->name('pre_apoderado.nueva_solicitud');
+    Route::post('/nueva-solicitud', [SolicitudPrematriculaController::class, 'guardarNuevaSolicitud'])
+        ->name('pre_apoderado.guardar_nueva_solicitud');
 });

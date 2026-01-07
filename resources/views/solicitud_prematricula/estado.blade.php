@@ -1,17 +1,52 @@
-@extends('layouts.pre_apoderado')
+@extends('base.administrativo.blank')
 
-@section('content')
+@section('titulo', 'Estado de Solicitud de Prematrícula')
+
+@section('contenido')
 <div class="p-8 m-4 bg-gray-100 dark:bg-white/[0.03] rounded-2xl">
     <!-- Header -->
     <div class="flex pb-6 justify-between items-center border-b border-gray-200 dark:border-gray-700">
         <div>
-            <h2 class="text-2xl font-bold dark:text-gray-200 text-gray-800">Estado de Solicitud de Prematrícula</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Solicitud #{{ $solicitud->id_solicitud }}</p>
+            <h2 class="text-2xl font-bold dark:text-gray-200 text-gray-800">Mis Solicitudes de Prematrícula</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Gestione sus solicitudes de prematrícula</p>
         </div>
+        <a href="{{ route('pre_apoderado.nueva_solicitud') }}" 
+            class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Nueva Solicitud
+        </a>
     </div>
 
-    <!-- Estado actual -->
+    {{-- Lista de solicitudes si hay más de una --}}
+    @if($solicitudes->count() > 1)
+        <div class="mt-6 mb-4">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Seleccionar solicitud:</label>
+            <div class="flex flex-wrap gap-2">
+                @foreach($solicitudes as $sol)
+                    <a href="{{ route('pre_apoderado.estado_solicitud', ['id' => $sol->id_solicitud]) }}"
+                        class="px-4 py-2 rounded-lg text-sm font-medium transition-colors
+                        {{ $solicitud->id_solicitud === $sol->id_solicitud 
+                            ? 'bg-blue-600 text-white' 
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600' }}">
+                        {{ $sol->nombre_completo_alumno }}
+                        <span class="ml-1 text-xs opacity-75">({{ ucfirst($sol->estado) }})</span>
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    <!-- Estado actual de la solicitud seleccionada -->
     <div class="mt-6">
+        <div class="flex items-center gap-2 mb-4">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                Solicitud #{{ $solicitud->id_solicitud }} - {{ $solicitud->nombre_completo_alumno }}
+            </h3>
+            {!! $solicitud->estado_badge !!}
+        </div>
+
         @if($solicitud->estado === 'pendiente')
             <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-6">
                 <div class="flex items-center gap-4">
@@ -141,7 +176,7 @@
                 </div>
                 <div class="flex justify-between">
                     <dt class="text-sm text-gray-500 dark:text-gray-400">Fecha de Nacimiento:</dt>
-                    <dd class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ $solicitud->fecha_nacimiento->format('d/m/Y') }}</dd>
+                    <dd class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ \Carbon\Carbon::parse($solicitud->fecha_nacimiento)->format('d/m/Y') }}</dd>
                 </div>
                 <div class="flex justify-between">
                     <dt class="text-sm text-gray-500 dark:text-gray-400">Grado solicitado:</dt>
@@ -155,7 +190,7 @@
     <div class="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
         Solicitud enviada el {{ $solicitud->created_at->format('d/m/Y \a \l\a\s H:i') }}
         @if($solicitud->fecha_revision)
-            <br>Revisada el {{ $solicitud->fecha_revision->format('d/m/Y \a \l\a\s H:i') }}
+            <br>Revisada el {{ \Carbon\Carbon::parse($solicitud->fecha_revision)->format('d/m/Y \a \l\a\s H:i') }}
         @endif
     </div>
 </div>

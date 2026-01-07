@@ -32,7 +32,9 @@ trait LogsActions
 
     protected function logAction(Model $model, string $actionName, ?Model $subject = null, ?string $observacion = null): void
     {
-        if (LogsActions::$disabled) return;
+        if (LogsActions::$disabled || !Auth::check()) {
+            return;
+        }
 
         $conceptoAccion = ConceptoAccion::where('accion', '=', $actionName)
             ->where('estado', '=', '1')

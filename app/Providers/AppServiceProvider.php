@@ -74,6 +74,10 @@ class AppServiceProvider extends ServiceProvider
             return count($admin) == 1;
         });
 
+        Gate::define('is-preapoderado', function (User $user) {
+            return $user->tipo === 'PreApoderado';
+        });
+
         Gate::define('access-resource', function (User $user, $resource) {
             return $this->hasResourcePermissions($user, $resource);
         });
@@ -194,6 +198,14 @@ class AppServiceProvider extends ServiceProvider
                 ],
             ]
         ]);
+
+        config([
+            'preapoderado-permissions' => [
+                'solicitud' => [
+                    'view' => ['PreApoderado'],
+                ],
+            ]
+        ]);
     }
 
     private function hasResourcePermissions(User $user, string $resource, string $action = 'view')
@@ -210,6 +222,14 @@ class AppServiceProvider extends ServiceProvider
             $permissions = config('familiar-permissions');
 
             return in_array('Familiar', $permissions[$resource][$action]);
+        } else if ($user->tipo == 'PreApoderado') {
+            $permissions = config('preapoderado-permissions');
+
+            if (!isset($permissions[$resource]) || !isset($permissions[$resource][$action])) {
+                return false;
+            }
+
+            return in_array('PreApoderado', $permissions[$resource][$action]);
         } else {
             return false;
         }

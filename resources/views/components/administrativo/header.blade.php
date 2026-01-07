@@ -618,17 +618,24 @@
             <img src="./images/user/owner.jpg" alt="User" />
           </span>
         -->
-          @php
-            use App\Models\Administrativo;
-            $id_usuario = Auth::user()->id_usuario;
-
-            $query = Administrativo::where('id_usuario', '=', $id_usuario)->get();
-
-            $name = $query[0]->primer_nombre;
-            $apellido = $query[0]->apellido_paterno;
-            $cargo = $query[0]->cargo;
-
-          @endphp
+         @php
+            $user = Auth::user();
+            
+            if ($user->tipo === 'Administrativo' && $user->administrativo) {
+                $name = $user->administrativo->primer_nombre;
+                $apellido = $user->administrativo->apellido_paterno;
+                $cargo = $user->administrativo->cargo;
+            } elseif ($user->tipo === 'PreApoderado') {
+                $solicitud = $user->solicitudPrematricula;
+                $name = $solicitud ? $solicitud->primer_nombre_apoderado : $user->username;
+                $apellido = $solicitud ? $solicitud->apellido_paterno_apoderado : '';
+                $cargo = 'Solicitante de Prematrícula';
+            } else {
+                $name = $user->username;
+                $apellido = '';
+                $cargo = $user->tipo;
+            }
+        @endphp
 
           <span class="text-theme-sm mr-1 block font-medium"> {{ $name }}</span>
 
