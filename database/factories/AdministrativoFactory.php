@@ -19,9 +19,8 @@ class AdministrativoFactory extends Factory
     {
         $firstName = fake()->firstName();
         $fatherLastName = fake()->lastName();
-        $customUsername = $firstName . "." . $fatherLastName;
         return [
-            'id_usuario' => User::factory(['tipo' => 'Administrativo', 'username' => $customUsername]),
+            'id_usuario' => null, // Por defecto sin usuario vinculado
             'apellido_paterno' => $fatherLastName,
             'apellido_materno' => fake()->lastName(),
             'primer_nombre' => $firstName,

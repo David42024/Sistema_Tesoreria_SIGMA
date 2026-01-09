@@ -196,6 +196,7 @@ class AlumnoController extends Controller
         return $page->render();
     }
 
+    //Ver más
     public function viewAll(Request $request)
     {
         return static::index($request, true);

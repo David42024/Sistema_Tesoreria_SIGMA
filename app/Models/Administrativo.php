@@ -27,4 +27,9 @@ class Administrativo extends Model
     ];
 
     protected $primaryKey = 'id_administrativo';
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'id_usuario', 'id_usuario');
+    }
 }

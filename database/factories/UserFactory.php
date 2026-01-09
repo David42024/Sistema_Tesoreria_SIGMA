@@ -25,10 +25,10 @@ class UserFactory extends Factory
     {
         return [
             'username' => fake()->userName(),
-            'password' => static::$password ??= Hash::make(fake()->word()),
-            'created_at' => now(),
-            'tipo' => fake()->randomElement(['Alumno', 'Padre de Familia', 'Personal']),
-            'estado' => 1,
+            'password' => static::$password ??= Hash::make('password'),
+            'last_login' => null,
+            'tipo' => fake()->randomElement(['Administrativo', 'Personal', 'PreApoderado']),
+            'estado' => true,
             'remember_token' => Str::random(10),
         ];
     }

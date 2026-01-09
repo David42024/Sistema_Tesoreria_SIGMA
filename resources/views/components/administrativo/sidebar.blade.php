@@ -86,6 +86,7 @@
                 'Historial de Acciones',
             ],
             'links' => [
+                'Usuarios' => 'usuario_view',
                 'Administrativos' => 'administrativo_view',
                 'Historial de Acciones' => 'historial_de_acciones_view',
                 'Validación de Pago' => 'validacion_pago_view',
