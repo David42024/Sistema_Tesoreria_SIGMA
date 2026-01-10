@@ -51,7 +51,7 @@ class ComposicionFamiliarController extends Controller
     public function index(Request $request, $long = false)
     {
         $sqlColumns = ['id_alumno', 'id_familiar', 'parentesco'];
-        $resource = 'alumnos';
+        $resource = 'composicion_familiar'; // ✅ CORREGIDO
         $params = RequestHelper::extractSearchParams($request);
 
         $page = CRUDTablePage::new()
@@ -89,17 +89,16 @@ class ComposicionFamiliarController extends Controller
         $searchBox->value = $params->search;
         $content->searchBox($searchBox);
 
-        /* Modales usados */
+        /* ✅ Modal configurado para mostrar solo 3 columnas */
         $cautionModal = CautionModalComponent::new()
             ->cautionMessage('¿Estás seguro?')
             ->action('Estás eliminando permanentemente esta asignación')
-            ->columns(['ID Familiar', 'Nombre Familiar', 'ID Alumno', 'Nombre Alumno', 'Parentesco'])
-            ->rows([0, 1, 2, 3, 4]) // Mapea a rows[0]=ID familiar, [1]=nombre familiar, [2]=ID alumno, [3]=nombre alumno, [4]=parentesco
+            ->columns(['ID Familiar', 'ID Alumno', 'Parentesco']) // Solo 3 columnas
+            ->rows([0, 2, 4]) // Posición 0=ID Familiar, 2=ID Alumno, 4=Parentesco
             ->lastWarningMessage('Esta acción no se puede deshacer. La asignación será eliminada permanentemente de la base de datos.')
             ->confirmButton('Sí, eliminar')
             ->cancelButton('Cancelar')
             ->isForm(true)
-            // Para IDs separados, si el componente soporta, agrega: ->dataInputNames(['id_familiar' => 0, 'id_alumno' => 2]) o custom
             ->build();
 
         $page->modals([$cautionModal]);
@@ -126,24 +125,32 @@ class ComposicionFamiliarController extends Controller
                                  $composicion->alumno->primer_nombre . ' ' .
                                  $composicion->alumno->otros_nombres);
 
-            // Orden exacto para modal: ID familiar (0), nombre familiar (1), ID alumno (2), nombre alumno (3), parentesco (4)
-            // Extras al final para delete (pos 5=id_alumno, 6=id_familiar)
+            /* ✅ ESTRUCTURA DEL ARRAY CORREGIDA
+             * Posición 0: ID Familiar (se muestra en modal, columna 0)
+             * Posición 1: Nombre Familiar (se muestra en tabla)
+             * Posición 2: ID Alumno (se muestra en modal, columna 1)
+             * Posición 3: Nombre Alumno (se muestra en tabla)
+             * Posición 4: Parentesco (se muestra en modal, columna 2)
+             * Posición 5: id_alumno (hidden input para delete)
+             * Posición 6: id_familiar (hidden input para delete)
+             */
             array_push(
                 $table->rows,
                 [
-                    $composicion->id_familiar,      // 0: ID Familiar (para modal col 0)
-                    $nombreFamiliar,                // 1: Nombre Familiar (col 1)
-                    $composicion->id_alumno,        // 2: ID Alumno (col 2)
-                    $nombreAlumno,                  // 3: Nombre Alumno (col 3)
-                    $composicion->parentesco,       // 4: Parentesco (col 4)
-                    $composicion->id_alumno,        // 5: id_alumno para hidden delete
-                    $composicion->id_familiar       // 6: id_familiar para hidden delete
+                    $composicion->id_familiar,      // 0: ID Familiar (visible en modal)
+                    $nombreFamiliar,                // 1: Nombre Familiar (visible en tabla)
+                    $composicion->id_alumno,        // 2: ID Alumno (visible en modal)
+                    $nombreAlumno,                  // 3: Nombre Alumno (visible en tabla)
+                    $composicion->parentesco,       // 4: Parentesco (visible en modal)
+                    $composicion->id_alumno,        // 5: id_alumno (hidden para delete)
+                    $composicion->id_familiar       // 6: id_familiar (hidden para delete)
                 ]
             );
         }
 
+        // ✅ Acción de delete con el resource correcto
         $table->actions = [
-            new TableAction('delete', '', $resource),  // El componente debe usar pos 5 y 6 para hidden id_alumno/id_familiar
+            new TableAction('delete', '', $resource),
         ];
 
         $paginator = new TablePaginator($params->page, $query->lastPage(), [
@@ -264,68 +271,100 @@ class ComposicionFamiliarController extends Controller
     public function delete(Request $request)
     {
         try {
-            Log::info('Delete iniciado. IDs recibidos: alumno=' . ($request->input('id_alumno') ?? 'null') . ', familiar=' . ($request->input('id_familiar') ?? 'null'));
+            // 🔍 DEBUG: Registrar todos los datos recibidos
+            Log::info('===== DELETE COMPOSICION FAMILIAR - DEBUG COMPLETO =====');
+            Log::info('Método HTTP: ' . $request->method());
+            Log::info('Todos los datos del request:', $request->all());
+            Log::info('id_alumno recibido: ' . ($request->input('id_alumno') ?? 'NULL'));
+            Log::info('id_familiar recibido: ' . ($request->input('id_familiar') ?? 'NULL'));
+            Log::info('Tipo de id_alumno: ' . gettype($request->input('id_alumno')));
+            Log::info('Tipo de id_familiar: ' . gettype($request->input('id_familiar')));
+            Log::info('========================================================');
 
-            // Obtener IDs separados del formulario
+            // Obtener IDs del formulario
             $idAlumno = $request->input('id_alumno');
             $idFamiliar = $request->input('id_familiar');
 
+            // Validar que los IDs existan
             if (!$idAlumno || !$idFamiliar) {
                 Log::warning('Delete falló: IDs no proporcionados.');
+                Log::warning('id_alumno: ' . var_export($idAlumno, true));
+                Log::warning('id_familiar: ' . var_export($idFamiliar, true));
+
                 return redirect()->route('composicion_familiar_view')
-                    ->with('error', 'IDs no proporcionados en la solicitud.');
+                    ->with('error', 'IDs no proporcionados en la solicitud. Por favor, intenta de nuevo.');
             }
 
-            // Validar que sean enteros positivos
+            // Convertir y validar que sean enteros positivos
             $idAlumno = (int) $idAlumno;
             $idFamiliar = (int) $idFamiliar;
 
             if ($idAlumno <= 0 || $idFamiliar <= 0) {
-                Log::warning('Delete falló: IDs inválidos - alumno=' . $idAlumno . ', familiar=' . $idFamiliar);
+                Log::warning('Delete falló: IDs inválidos después de conversión.');
+                Log::warning('id_alumno convertido: ' . $idAlumno);
+                Log::warning('id_familiar convertido: ' . $idFamiliar);
+
                 return redirect()->route('composicion_familiar_view')
-                    ->with('error', 'IDs deben ser números positivos válidos.');
+                    ->with('error', 'Los IDs proporcionados no son válidos.');
             }
 
-            Log::info('IDs validados: alumno=' . $idAlumno . ', familiar=' . $idFamiliar);
+            Log::info('IDs validados correctamente:');
+            Log::info('id_alumno: ' . $idAlumno);
+            Log::info('id_familiar: ' . $idFamiliar);
 
-            // Buscar por PK compuesta
+            // Buscar la composición por la clave primaria compuesta
             $composicion = ComposicionFamiliar::where('id_alumno', $idAlumno)
                 ->where('id_familiar', $idFamiliar)
                 ->first();
 
             if (!$composicion) {
-                Log::warning('Delete falló: Registro no encontrado - alumno=' . $idAlumno . ', familiar=' . $idFamiliar);
+                Log::warning('Delete falló: Registro no encontrado en la base de datos.');
+                Log::warning('Búsqueda con id_alumno=' . $idAlumno . ', id_familiar=' . $idFamiliar);
+
                 return redirect()->route('composicion_familiar_view')
-                    ->with('error', 'Asignación no encontrada. Verifica los datos.');
+                    ->with('error', 'La asignación no fue encontrada. Puede que ya haya sido eliminada.');
             }
 
-            Log::info('Registro encontrado: Estado actual=' . ($composicion->estado ? 'true' : 'false'));
+            Log::info('Registro encontrado:');
+            Log::info('ID Alumno: ' . $composicion->id_alumno);
+            Log::info('ID Familiar: ' . $composicion->id_familiar);
+            Log::info('Parentesco: ' . $composicion->parentesco);
+            Log::info('Estado actual: ' . ($composicion->estado ? 'Activo (1)' : 'Inactivo (0)'));
 
-            // Verificar que no esté ya desactivada
+            // Verificar si ya está desactivada
             if (!$composicion->estado) {
-                Log::info('Delete omitido: Ya desactivado');
+                Log::info('Delete omitido: La asignación ya estaba desactivada.');
+
                 return redirect()->route('composicion_familiar_view')
-                    ->with('warning', 'La asignación ya está desactivada.');
+                    ->with('warning', 'La asignación ya estaba desactivada anteriormente.');
             }
 
-            // Soft delete
-            $composicion->estado = false;
+            // Realizar soft delete (cambiar estado a 0)
+            $composicion->estado = 0;
             $saved = $composicion->save();
 
             if ($saved) {
-                Log::info('Delete exitoso: Asignación desactivada');
+                Log::info('✅ DELETE EXITOSO: Asignación desactivada correctamente.');
+                Log::info('id_alumno=' . $idAlumno . ', id_familiar=' . $idFamiliar);
+
                 return redirect()->route('composicion_familiar_view')
-                    ->with('success', 'Asignación desactivada correctamente.');
+                    ->with('success', 'Asignación eliminada correctamente.');
             } else {
-                Log::error('Delete falló en save()');
+                Log::error('Delete falló en save(): No se pudo guardar el cambio de estado.');
+
                 return redirect()->route('composicion_familiar_view')
-                    ->with('error', 'Error al actualizar el estado.');
+                    ->with('error', 'Error al guardar los cambios. Por favor, intenta de nuevo.');
             }
 
         } catch (\Exception $e) {
-            Log::error('Delete error general: ' . $e->getMessage());
+            Log::error('❌ DELETE ERROR - Excepción capturada:');
+            Log::error('Mensaje: ' . $e->getMessage());
+            Log::error('Archivo: ' . $e->getFile());
+            Log::error('Línea: ' . $e->getLine());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+
             return redirect()->route('composicion_familiar_view')
-                ->with('error', 'Error al procesar la eliminación. Intenta de nuevo.');
+                ->with('error', 'Error al procesar la eliminación: ' . $e->getMessage());
         }
     }
 }

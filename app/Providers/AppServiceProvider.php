@@ -163,7 +163,16 @@ class AppServiceProvider extends ServiceProvider
                     'edit' => ['Director'],
                     'delete' => ['Director'],
                     'download' => ['Director'],
-                ]
+                ],
+                // ✅ AGREGADO: Permisos para composicion_familiar
+                'composicion_familiar' => [
+                    'view' => ['Director', 'Secretaria'],
+                    'create' => ['Director'],
+                    'edit' => ['Director'],
+                    'delete' => ['Director'],
+                    'view_details' => ['Director', 'Secretaria'],
+                    'download' => ['Director'],
+                ],
             ]
         ]);
 
