@@ -11,7 +11,8 @@ use App\Models\Seccion;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-
+use App\Interfaces\IExporterService;
+use App\Interfaces\IExportRequestFactory;
 use App\Helpers\CRUDTablePage;
 use App\Helpers\ExcelExportHelper;
 use App\Helpers\PDFExportHelper;
@@ -463,98 +464,54 @@ class SeccionController extends Controller
         return redirect(route('seccion_view', ['deleted' => true]));
     }
 
-    public function export(Request $request)
-{
-    $format = $request->input('export', 'excel');
-    $sqlColumns = ["NivelEducativo.nombre_nivel", "Grado.nombre_grado", "nombreSeccion"];
+    public function export(
+        Request $request,
+        IExportRequestFactory $requestFactory,
+        IExporterService $exporterService
+    ) {
+        try {
 
-    $params = RequestHelper::extractSearchParams($request);
+            $sqlColumns = ['NivelEducativo.nombre_nivel', 'Grado.nombre_grado', 'nombreSeccion'];
 
-    if ($format === 'pdf') {
-        $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
-        return $this->exportPdf($query);
-    }
+            $params = RequestHelper::extractSearchParams($request);
+            $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
 
-    $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
+            $query = $query->sortBy(function ($seccion) {
+                return ($seccion->grado->niveleducativo->nombre_nivel ?? '') . 
+                    ($seccion->grado->nombre_grado ?? '') .
+                    ($seccion->nombreSeccion ?? '');
+            });
 
-    if ($params->page > $query->lastPage()) {
-        $params->page = 1;
-        $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
-    }
+            $data = $query->map(function ($seccion) {
+                return [
+                    $seccion->grado->niveleducativo->nombre_nivel ?? 'N/A',
+                    $seccion->grado->nombre_grado ?? 'N/A',
+                    $seccion->nombreSeccion ?? 'N/A',
+                ];
+            });
 
-    if ($format === 'excel') {
-        return $this->exportExcel($query);
-    } elseif ($format === 'pdf') {
-        return $this->exportPdf($query);
-    }
+            $title = 'Secciones';
+            $headers = ['Nivel Educativo', 'Grado', 'Sección'];
 
-    return abort(400, 'Formato no válido');
-}
+            $exportRequest = $requestFactory->create(
+                $title,
+                $headers,
+                $data->toArray(),
+                [
+                    'filename' => 'secciones_' . date('d_m_Y'),
+                    'subtitle' => 'Listado de secciones del sistema',
+                    'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente'
+                ]
+            );
 
-private function exportExcel($secciones)
-{
-    $headers = ['Nivel Educativo', 'Grado', 'Sección'];
-    $fileName = 'secciones_' . date('Y-m-d_H-i-s') . '.xlsx';
-    $title = 'Secciones';
-    $subject = 'Exportación de Secciones';
-    $description = 'Listado de secciones del sistema';
+            return $exporterService->exportAsResponse($request, $exportRequest);
 
-    return ExcelExportHelper::exportExcel(
-        $fileName,
-        $headers,
-        $secciones,
-        function($sheet, $row, $seccion) {
-            $sheet->setCellValue('A' . $row, $seccion->grado->niveleducativo->nombre_nivel ?? '');
-            $sheet->setCellValue('B' . $row, $seccion->grado->nombre_grado ?? '');
-            $sheet->setCellValue('C' . $row, $seccion->nombreSeccion ?? '');
-        },
-        $title,
-        $subject,
-        $description
-    );
-}
-
-private function exportPdf($secciones)
-{
-    try {
-        if ($secciones instanceof \Illuminate\Database\Eloquent\Collection) {
-            $data = $secciones;
-        } elseif ($secciones instanceof \Illuminate\Pagination\LengthAwarePaginator) {
-            $data = collect($secciones->items());
-        } else {
-            $data = collect($secciones);
+        } catch (\Exception $e) {
+            \Log::error('Error en exportación de secciones: ' . $e->getMessage());
+            return back()->with('error', 'Error durante la exportación');
         }
-
-        if ($data->isEmpty()) {
-            return response()->json(['error' => 'No hay datos para exportar'], 400);
-        }
-
-        $fileName = 'secciones_' . date('Y-m-d_H-i-s') . '.pdf';
-
-        $rows = $data->map(function($seccion) {
-            return [
-                $seccion->grado->niveleducativo->nombre_nivel ?? 'N/A',
-                $seccion->grado->nombre_grado ?? 'N/A',
-                $seccion->nombreSeccion ?? 'N/A'
-            ];
-        })->toArray();
-
-        $html = PDFExportHelper::generateTableHtml([
-            'title' => 'Secciones',
-            'subtitle' => 'Listado de Secciones',
-            'headers' => ['Nivel Educativo', 'Grado', 'Sección'],
-            'rows' => $rows,
-            'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente',
-        ]);
-
-        return PDFExportHelper::exportPdf($fileName, $html);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'error' => 'Error generando PDF: ' . $e->getMessage()
-        ], 500);
     }
-}
+
 
 
 

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Interfaces\IExporterService;
+use App\Interfaces\IExportRequestFactory;
 use App\Helpers\FilteredSearchQuery;
 use App\Models\Curso;
 use App\Models\NivelEducativo;
@@ -331,103 +333,34 @@ class CursoController extends Controller
     }
 
 
-    public function export(Request $request)
-{
-    $format = $request->input('export', 'excel');
-    $sqlColumns = ['id_curso', 'codigo_curso', 'NivelEducativo.nombre_nivel', 'nombre_curso'];
+    public function export(Request $request, IExportRequestFactory $requestFactory, IExporterService $exporterService)
+    {
+        $sqlColumns = ['id_curso', 'codigo_curso', 'nivel.nombre_nivel', 'nombre_curso'];
 
-    $params = RequestHelper::extractSearchParams($request);
-
-    // PDF: todos los registros
-    if ($format === 'pdf') {
+        $params = RequestHelper::extractSearchParams($request);
         $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
-        return $this->exportPdf($query);
-    }
 
-    // Excel: solo página actual
-    $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
-
-    if ($params->page > $query->lastPage()) {
-        $params->page = 1;
-        $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
-    }
-
-    if ($format === 'excel') {
-        return $this->exportExcel($query);
-    } elseif ($format === 'pdf') {
-        return $this->exportPdf($query);
-    }
-
-    return abort(400, 'Formato no válido');
-}
-
-private function exportExcel($cursos)
-{
-    $headers = ['ID', 'Código del curso', 'Pertenece al nivel', 'Nombre del curso'];
-    $fileName = 'cursos_' . date('Y-m-d_H-i-s') . '.xlsx';
-    $title = 'Cursos';
-    $subject = 'Exportación de Cursos';
-    $description = 'Listado de cursos del sistema';
-
-    return ExcelExportHelper::exportExcel(
-        $fileName,
-        $headers,
-        $cursos,
-        function($sheet, $row, $curso) {
-            $sheet->setCellValue('A' . $row, $curso->id_curso);
-            $sheet->setCellValue('B' . $row, $curso->codigo_curso);
-            $sheet->setCellValue('C' . $row, $curso->niveleducativo->nombre_nivel ?? '');
-            $sheet->setCellValue('D' . $row, $curso->nombre_curso);
-        },
-        $title,
-        $subject,
-        $description
-    );
-}
-
-private function exportPdf($cursos)
-{
-    try {
-        if ($cursos instanceof \Illuminate\Database\Eloquent\Collection) {
-            $data = $cursos;
-        } elseif ($cursos instanceof \Illuminate\Pagination\LengthAwarePaginator) {
-            $data = collect($cursos->items());
-        } else {
-            $data = collect($cursos);
-        }
-
-        if ($data->isEmpty()) {
-            return response()->json(['error' => 'No hay datos para exportar'], 400);
-        }
-
-        $fileName = 'cursos_' . date('Y-m-d_H-i-s') . '.pdf';
-
-        $rows = $data->map(function($curso) {
+        $data = $query->map(function ($curso) {
             return [
-                $curso->id_curso ?? 'N/A',
-                $curso->codigo_curso ?? 'N/A',
-                $curso->niveleducativo->nombre_nivel ?? 'N/A',
-                $curso->nombre_curso ?? 'N/A'
+                $curso->id_curso,
+                $curso->codigo_curso,
+                $curso->nivel->nombre_nivel ?? 'N/A',
+                $curso->nombre_curso,
             ];
-        })->toArray();
+        });
 
-        $html = PDFExportHelper::generateTableHtml([
-            'title' => 'Cursos',
-            'subtitle' => 'Listado de Cursos',
-            'headers' => ['ID', 'Código del curso', 'Pertenece al nivel', 'Nombre del curso'],
-            'rows' => $rows,
-            'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente',
-        ]);
+        $title = 'Listado de Cursos';
+        $headers = ['ID', 'Código', 'Nivel Educativo', 'Nombre'];
 
-        return PDFExportHelper::exportPdf($fileName, $html);
+        $exportRequest = $requestFactory->create(
+            $title,
+            $headers,
+            $data->toArray(),
+            ['filename' => 'cursos_' . date('d_m_Y')]
+        );
 
-    } catch (\Exception $e) {
-        return response()->json([
-            'error' => 'Error generando PDF: ' . $e->getMessage()
-        ], 500);
+        return $exporterService->exportAsResponse($request, $exportRequest);
     }
-}
-
 
 }
 

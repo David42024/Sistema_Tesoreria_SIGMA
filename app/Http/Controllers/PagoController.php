@@ -13,7 +13,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
-
+use App\Interfaces\IExporterService;
+use App\Interfaces\IExportRequestFactory;
 use App\Helpers\CRUDTablePage;
 use App\Helpers\ExcelExportHelper;
 use App\Helpers\FilteredSearchQuery;
@@ -1786,56 +1787,43 @@ class PagoController extends Controller
         }
     }
 
-    public function export(Request $request)
-    {
+    public function export(
+        Request $request,
+        IExportRequestFactory $requestFactory,
+        IExporterService $exporterService
+    ) {
         try {
-            $format = $request->input('export', 'excel');
 
             $sqlColumns = ['id_pago', 'fecha_pago', 'monto', 'observaciones'];
 
             $params = RequestHelper::extractSearchParams($request);
-
             $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
 
             \Log::info('Exportando pagos', [
-                'format' => $format,
                 'total_records' => $query->count(),
             ]);
 
-            if ($format === 'pdf') {
-                return $this->exportPdf($query);
-            }
+            $query = $query->sortByDesc('fecha_pago');
 
-            return $this->exportExcel($query);
+            $data = $query->map(function ($pago) {
 
-        } catch (\Exception $e) {
-            \Log::error('Error en exportación de pagos: ' . $e->getMessage());
-            return back()->with('error', 'Error durante la exportación');
-        }
-    }
-
-    private function exportExcel($pagos)
-    {
-        $headers = ['ID', 'Concepto de Pago', 'Estudiante', 'Fecha de Pago', 'Monto', 'Observaciones'];
-        $fileName = 'pagos_' . date('Y-m-d_H-i-s') . '.xlsx';
-
-        return ExcelExportHelper::exportExcel(
-            $fileName,
-            $headers,
-            $pagos,
-            function ($sheet, $row, $pago) {
-                // Cargar relaciones
                 if ($pago->id_deuda) {
                     $pago->load(['deuda.conceptoPago', 'deuda.alumno']);
+
                     $concepto = $pago->deuda->conceptoPago->descripcion ?? 'Sin concepto';
                     $alumno = trim(
                         ($pago->deuda->alumno->primer_nombre ?? '') . ' ' .
                         ($pago->deuda->alumno->apellido_paterno ?? '') . ' ' .
                         ($pago->deuda->alumno->apellido_materno ?? '')
                     );
+
                 } elseif ($pago->id_orden) {
                     $pago->load(['ordenPago.alumno']);
-                    $concepto = $pago->tipo_pago === 'orden_completa' ? 'ORDEN COMPLETA' : 'ORDEN PARCIAL';
+
+                    $concepto = $pago->tipo_pago === 'orden_completa'
+                        ? 'ORDEN COMPLETA'
+                        : 'ORDEN PARCIAL';
+
                     $alumno = trim(
                         ($pago->ordenPago->alumno->primer_nombre ?? '') . ' ' .
                         ($pago->ordenPago->alumno->apellido_paterno ?? '') . ' ' .
@@ -1850,72 +1838,37 @@ class PagoController extends Controller
                     ? $pago->fecha_pago->format('d/m/Y')
                     : Carbon::parse($pago->fecha_pago)->format('d/m/Y');
 
-                $sheet->setCellValue('A' . $row, $pago->id_pago);
-                $sheet->setCellValue('B' . $row, $concepto);
-                $sheet->setCellValue('C' . $row, $alumno);
-                $sheet->setCellValue('D' . $row, $fechaPago);
-                $sheet->setCellValue('E' . $row, 'S/ ' . number_format($pago->monto, 2));
-                $sheet->setCellValue('F' . $row, $pago->observaciones ?? 'Sin observaciones');
-            },
-            'Pagos',
-            'Exportación de Pagos',
-            'Listado de pagos del sistema'
-        );
-    }
+                return [
+                    $pago->id_pago,
+                    $concepto,
+                    $alumno,
+                    $fechaPago,
+                    number_format($pago->monto, 2),
+                    $pago->observaciones ?? 'Sin observaciones',
+                ];
+            });
 
-    private function exportPdf($pagos)
-    {
-        if ($pagos->isEmpty()) {
-            return response()->json(['error' => 'No hay datos para exportar'], 400);
+            $title = 'Pagos';
+            $headers = ['ID', 'Concepto de Pago', 'Estudiante', 'Fecha de Pago', 'Monto (S/)', 'Observaciones'];
+
+            $exportRequest = $requestFactory->create(
+                $title,
+                $headers,
+                $data->toArray(),
+                [
+                    'filename' => 'pagos_' . date('d_m_Y'),
+                    'subtitle' => 'Listado de pagos del sistema',
+                    'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente'
+                ]
+            );
+
+            return $exporterService->exportAsResponse($request, $exportRequest);
+
+        } catch (\Exception $e) {
+            \Log::error('Error en exportación de pagos: ' . $e->getMessage());
+            return back()->with('error', 'Error durante la exportación');
         }
-
-        $fileName = 'pagos_' . date('Y-m-d_H-i-s') . '.pdf';
-
-        $rows = $pagos->map(function ($pago) {
-            if ($pago->id_deuda) {
-                $pago->load(['deuda.conceptoPago', 'deuda.alumno']);
-                $concepto = $pago->deuda->conceptoPago->descripcion ?? 'Sin concepto';
-                $alumno = trim(
-                    ($pago->deuda->alumno->primer_nombre ?? '') . ' ' .
-                    ($pago->deuda->alumno->apellido_paterno ?? '') . ' ' .
-                    ($pago->deuda->alumno->apellido_materno ?? '')
-                );
-            } elseif ($pago->id_orden) {
-                $pago->load(['ordenPago.alumno']);
-                $concepto = $pago->tipo_pago === 'orden_completa' ? 'ORDEN COMPLETA' : 'ORDEN PARCIAL';
-                $alumno = trim(
-                    ($pago->ordenPago->alumno->primer_nombre ?? '') . ' ' .
-                    ($pago->ordenPago->alumno->apellido_paterno ?? '') . ' ' .
-                    ($pago->ordenPago->alumno->apellido_materno ?? '')
-                );
-            } else {
-                $concepto = 'Sin concepto';
-                $alumno = 'Sin nombre';
-            }
-
-            $fechaPago = $pago->fecha_pago instanceof Carbon
-                ? $pago->fecha_pago->format('d/m/Y')
-                : Carbon::parse($pago->fecha_pago)->format('d/m/Y');
-
-            return [
-                $pago->id_pago,
-                $concepto,
-                $alumno,
-                $fechaPago,
-                'S/ ' . number_format($pago->monto, 2),
-                $pago->observaciones ?? 'Sin observaciones'
-            ];
-        })->toArray();
-
-        $html = PDFExportHelper::generateTableHtml([
-            'title' => 'Pagos',
-            'subtitle' => 'Listado de Pagos',
-            'headers' => ['ID', 'Concepto', 'Estudiante', 'Fecha', 'Monto', 'Observaciones'],
-            'rows' => $rows,
-            'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente',
-        ]);
-
-        return PDFExportHelper::exportPdf($fileName, $html);
     }
+
 }
 

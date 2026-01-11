@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\ConceptoPago;
 use Illuminate\Http\Request;
-
+use App\Interfaces\IExporterService;
+use App\Interfaces\IExportRequestFactory;
 use App\Helpers\CRUDTablePage;
 use App\Helpers\ExcelExportHelper;
 use App\Helpers\FilteredSearchQuery;
@@ -277,110 +278,32 @@ class ConceptoPagoController extends Controller
 
     /* ==================== EXPORTACIÓN ==================== */
 
-    public function export(Request $request)
+    public function export(Request $request, IExportRequestFactory $requestFactory, IExporterService $exporterService)
     {
-        try {
-            $format = $request->input('export', 'excel');
+        $sqlColumns = ['id_concepto', 'descripcion', 'escala', 'monto'];
 
-            $sqlColumns = ['id_concepto', 'descripcion', 'escala', 'monto'];
+        $params = RequestHelper::extractSearchParams($request);
+        $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
 
-            $params = RequestHelper::extractSearchParams($request);
+        $data = $query->map(function ($concepto) {
+            return [
+                $concepto->id_concepto,
+                $concepto->descripcion,
+                $concepto->escala,
+                'S/ ' . number_format($concepto->monto, 2),
+            ];
+        });
 
-            $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
+        $title = 'Listado de Conceptos de Pago';
+        $headers = ['ID', 'Descripción', 'Escala', 'Monto'];
 
-            \Log::info('Exportando conceptos de pago', [
-                'format' => $format,
-                'total_records' => $query->count(),
-                'search' => $params->search,
-                'filters' => $params->applied_filters
-            ]);
+        $exportRequest = $requestFactory->create(
+            $title,
+            $headers,
+            $data->toArray(),
+            ['filename' => 'conceptos_pago_' . date('d_m_Y')]
+        );
 
-            if ($format === 'pdf') {
-                return $this->exportPdf($query);
-            }
-
-            return $this->exportExcel($query);
-
-        } catch (\Exception $e) {
-            \Log::error('Error en exportación de conceptos de pago: ' . $e->getMessage(), [
-                'format' => $request->input('export'),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return back()->with('error', 'Error durante la exportación');
-        }
-    }
-
-    private function exportExcel($conceptos)
-    {
-        try {
-            $headers = ['ID', 'Descripción', 'Escala', 'Monto (S/)'];
-            $fileName = 'conceptos_pago_' . date('Y-m-d_H-i-s') . '.xlsx';
-            $title = 'Conceptos de Pago';
-            $subject = 'Exportación de Conceptos de Pago';
-            $description = 'Listado de conceptos de pago del sistema';
-
-            return ExcelExportHelper::exportExcel(
-                $fileName,
-                $headers,
-                $conceptos,
-                function ($sheet, $row, $concepto) {
-                    $sheet->setCellValue('A' . $row, $concepto->id_concepto ?? 'N/A');
-                    $sheet->setCellValue('B' . $row, $concepto->descripcion ?? 'N/A');
-                    $sheet->setCellValue('C' . $row, $concepto->escala ?? 'N/A');
-                    $sheet->setCellValue('D' . $row, number_format($concepto->monto ?? 0, 2));
-                },
-                $title,
-                $subject,
-                $description
-            );
-
-        } catch (\Exception $e) {
-            \Log::error('Error en exportExcel de conceptos de pago', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            throw $e;
-        }
-    }
-
-    private function exportPdf($conceptos)
-    {
-        try {
-            if ($conceptos->isEmpty()) {
-                return response()->json(['error' => 'No hay datos para exportar'], 400);
-            }
-
-            $fileName = 'conceptos_pago_' . date('Y-m-d_H-i-s') . '.pdf';
-
-            $rows = $conceptos->map(function ($concepto) {
-                return [
-                    $concepto->id_concepto ?? 'N/A',
-                    $concepto->descripcion ?? 'N/A',
-                    $concepto->escala ?? 'N/A',
-                    'S/ ' . number_format($concepto->monto ?? 0, 2)
-                ];
-            })->toArray();
-
-            $html = PDFExportHelper::generateTableHtml([
-                'title' => 'Conceptos de Pago',
-                'subtitle' => 'Listado de Conceptos de Pago',
-                'headers' => ['ID', 'Descripción', 'Escala', 'Monto (S/)'],
-                'rows' => $rows,
-                'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente',
-            ]);
-
-            return PDFExportHelper::exportPdf($fileName, $html);
-
-        } catch (\Exception $e) {
-            \Log::error('Error en exportPdf de conceptos de pago', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ]);
-
-            throw $e;
-        }
+        return $exporterService->exportAsResponse($request, $exportRequest);
     }
 }

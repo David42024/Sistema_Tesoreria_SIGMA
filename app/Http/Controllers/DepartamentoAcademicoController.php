@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\DepartamentoAcademico;
 use App\Models\Personal;
 use Illuminate\Http\Request;
-
+use App\Interfaces\IExporterService;
+use App\Interfaces\IExportRequestFactory;
 use App\Helpers\CRUDTablePage;
 use App\Helpers\ExcelExportHelper;
 use App\Helpers\FilteredSearchQuery;
@@ -426,22 +427,47 @@ class DepartamentoAcademicoController extends Controller
 
     /* ==================== EXPORTACIÓN ==================== */
 
-    public function export(Request $request)
-    {
+    public function export(
+        Request $request,
+        IExportRequestFactory $requestFactory,
+        IExporterService $exporterService
+    ) {
         try {
-            $format = $request->input('export', 'excel');
 
             $sqlColumns = ['id_departamento', 'nombre'];
 
             $params = RequestHelper::extractSearchParams($request);
-
             $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
 
-            if ($format === 'pdf') {
-                return $this->exportPdf($query);
-            }
+            $query = $query->sortBy('nombre');
 
-            return $this->exportExcel($query);
+            $data = $query->map(function ($departamento) {
+                $cantidadDocentes = Personal::where('id_departamento', $departamento->id_departamento)
+                    ->where('estado', 1)
+                    ->count();
+
+                return [
+                    $departamento->id_departamento,
+                    $departamento->nombre,
+                    $cantidadDocentes,
+                ];
+            });
+
+            $title = 'Departamentos Académicos';
+            $headers = ['ID', 'Nombre', 'N° Docentes'];
+
+            $exportRequest = $requestFactory->create(
+                $title,
+                $headers,
+                $data->toArray(),
+                [
+                    'filename' => 'departamentos_academicos_' . date('d_m_Y'),
+                    'subtitle' => 'Listado de departamentos académicos del sistema',
+                    'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente'
+                ]
+            );
+
+            return $exporterService->exportAsResponse($request, $exportRequest);
 
         } catch (\Exception $e) {
             \Log::error('Error en exportación de departamentos académicos: ' . $e->getMessage());
@@ -449,58 +475,4 @@ class DepartamentoAcademicoController extends Controller
         }
     }
 
-    private function exportExcel($departamentos)
-    {
-        $headers = ['ID', 'Nombre', 'N° Docentes'];
-        $fileName = 'departamentos_academicos_' . date('Y-m-d_H-i-s') . '.xlsx';
-
-        return ExcelExportHelper::exportExcel(
-            $fileName,
-            $headers,
-            $departamentos,
-            function ($sheet, $row, $departamento) {
-                $cantidadDocentes = Personal::where('id_departamento', $departamento->id_departamento)
-                    ->where('estado', 1)
-                    ->count();
-
-                $sheet->setCellValue('A' . $row, $departamento->id_departamento);
-                $sheet->setCellValue('B' . $row, $departamento->nombre);
-                $sheet->setCellValue('C' . $row, $cantidadDocentes);
-            },
-            'Departamentos Académicos',
-            'Exportación de Departamentos Académicos',
-            'Listado de departamentos académicos del sistema'
-        );
-    }
-
-    private function exportPdf($departamentos)
-    {
-        if ($departamentos->isEmpty()) {
-            return response()->json(['error' => 'No hay datos para exportar'], 400);
-        }
-
-        $fileName = 'departamentos_academicos_' . date('Y-m-d_H-i-s') . '.pdf';
-
-        $rows = $departamentos->map(function ($departamento) {
-            $cantidadDocentes = Personal::where('id_departamento', $departamento->id_departamento)
-                ->where('estado', 1)
-                ->count();
-
-            return [
-                $departamento->id_departamento,
-                $departamento->nombre,
-                $cantidadDocentes,
-            ];
-        })->toArray();
-
-        $html = PDFExportHelper::generateTableHtml([
-            'title' => 'Departamentos Académicos',
-            'subtitle' => 'Listado de Departamentos Académicos',
-            'headers' => ['ID', 'Nombre', 'N° Docentes'],
-            'rows' => $rows,
-            'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente',
-        ]);
-
-        return PDFExportHelper::exportPdf($fileName, $html);
-    }
 }

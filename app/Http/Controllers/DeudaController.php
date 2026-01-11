@@ -6,7 +6,8 @@ use App\Models\Deuda;
 use App\Models\Alumno;
 use App\Models\ConceptoPago;
 use Illuminate\Http\Request;
-
+use App\Interfaces\IExporterService;
+use App\Interfaces\IExportRequestFactory;
 use App\Helpers\CRUDTablePage;
 use App\Helpers\ExcelExportHelper;
 use App\Helpers\FilteredSearchQuery;
@@ -362,27 +363,63 @@ class DeudaController extends Controller
 
     /* ==================== EXPORTACIÓN ==================== */
 
-    public function export(Request $request)
-    {
+    public function export(
+        Request $request,
+        IExportRequestFactory $requestFactory,
+        IExporterService $exporterService
+    ) {
         try {
-            $format = $request->input('export', 'excel');
 
             $sqlColumns = ['id_deuda', 'id_alumno', 'id_concepto', 'periodo', 'monto_total', 'observacion'];
 
             $params = RequestHelper::extractSearchParams($request);
-
             $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
 
             \Log::info('Exportando deudas', [
-                'format' => $format,
                 'total_records' => $query->count(),
             ]);
 
-            if ($format === 'pdf') {
-                return $this->exportPdf($query);
-            }
+            $query = $query->sortBy('periodo');
 
-            return $this->exportExcel($query);
+            $data = $query->map(function ($deuda) {
+
+                $alumnoNombre = $deuda->alumno
+                    ? trim(
+                        $deuda->alumno->primer_nombre . ' ' .
+                        $deuda->alumno->apellido_paterno . ' ' .
+                        $deuda->alumno->apellido_materno
+                    )
+                    : 'Sin nombre';
+
+                $conceptoNombre = $deuda->concepto
+                    ? $deuda->concepto->descripcion
+                    : 'Sin concepto';
+
+                return [
+                    $deuda->id_deuda,
+                    $deuda->periodo ?? 'N/A',
+                    $alumnoNombre,
+                    $conceptoNombre,
+                    number_format($deuda->monto_total, 2),
+                    $deuda->observacion ?? 'Sin observaciones',
+                ];
+            });
+
+            $title = 'Deudas';
+            $headers = ['ID', 'Periodo', 'Alumno', 'Concepto', 'Monto Total (S/)', 'Observaciones'];
+
+            $exportRequest = $requestFactory->create(
+                $title,
+                $headers,
+                $data->toArray(),
+                [
+                    'filename' => 'deudas_' . date('d_m_Y'),
+                    'subtitle' => 'Listado de deudas del sistema',
+                    'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente'
+                ]
+            );
+
+            return $exporterService->exportAsResponse($request, $exportRequest);
 
         } catch (\Exception $e) {
             \Log::error('Error en exportación de deudas: ' . $e->getMessage());
@@ -390,72 +427,4 @@ class DeudaController extends Controller
         }
     }
 
-    private function exportExcel($deudas)
-    {
-        $headers = ['ID', 'Periodo', 'Alumno', 'Concepto', 'Monto Total (S/)', 'Observaciones'];
-        $fileName = 'deudas_' . date('Y-m-d_H-i-s') . '.xlsx';
-
-        return ExcelExportHelper::exportExcel(
-            $fileName,
-            $headers,
-            $deudas,
-            function ($sheet, $row, $deuda) {
-                $alumnoNombre = $deuda->alumno
-                    ? trim($deuda->alumno->primer_nombre . ' ' . $deuda->alumno->apellido_paterno . ' ' . $deuda->alumno->apellido_materno)
-                    : 'Sin nombre';
-
-                $conceptoNombre = $deuda->concepto
-                    ? $deuda->concepto->descripcion
-                    : 'Sin concepto';
-
-                $sheet->setCellValue('A' . $row, $deuda->id_deuda);
-                $sheet->setCellValue('B' . $row, $deuda->periodo ?? 'N/A');
-                $sheet->setCellValue('C' . $row, $alumnoNombre);
-                $sheet->setCellValue('D' . $row, $conceptoNombre);
-                $sheet->setCellValue('E' . $row, 'S/ ' . number_format($deuda->monto_total, 2));
-                $sheet->setCellValue('F' . $row, $deuda->observacion ?? 'Sin observaciones');
-            },
-            'Deudas',
-            'Exportación de Deudas',
-            'Listado de deudas del sistema'
-        );
-    }
-
-    private function exportPdf($deudas)
-    {
-        if ($deudas->isEmpty()) {
-            return response()->json(['error' => 'No hay datos para exportar'], 400);
-        }
-
-        $fileName = 'deudas_' . date('Y-m-d_H-i-s') . '.pdf';
-
-        $rows = $deudas->map(function ($deuda) {
-            $alumnoNombre = $deuda->alumno
-                ? trim($deuda->alumno->primer_nombre . ' ' . $deuda->alumno->apellido_paterno . ' ' . $deuda->alumno->apellido_materno)
-                : 'Sin nombre';
-
-            $conceptoNombre = $deuda->concepto
-                ? $deuda->concepto->descripcion
-                : 'Sin concepto';
-
-            return [
-                $deuda->id_deuda,
-                $deuda->periodo ?? 'N/A',
-                $alumnoNombre,
-                $conceptoNombre,
-                'S/ ' . number_format($deuda->monto_total, 2),
-                $deuda->observacion ?? 'Sin observaciones'
-            ];
-        })->toArray();
-
-        $html = PDFExportHelper::generateTableHtml([
-            'title' => 'Deudas',
-            'subtitle' => 'Listado de Deudas',
-            'headers' => ['ID', 'Periodo', 'Alumno', 'Concepto', 'Monto Total', 'Observaciones'],
-            'rows' => $rows,
-            'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente',
-        ]);
-
-        return PDFExportHelper::exportPdf($fileName, $html);
-    }
 }
