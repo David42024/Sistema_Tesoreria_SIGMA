@@ -101,7 +101,7 @@
       <!-- Application nav menu button -->
 
       <div class="hidden lg:block">
-        <form id="seleccion-alumno" method="POST">
+        <form id="seleccion-alumno" method="POST" action="{{ route('principal') }}">
           @csrf
           <div class="relative">
             <p class="inline mr-4 ml-12 text-gray-800 dark:text-gray-200 text-md lg:ml-0">Sesión iniciada como:</p>

@@ -33,18 +33,20 @@ class HomeController extends Controller {
     }
 
     public static function familiarIndex(Request $request){
-        if ($request->session()->get('alumno') == null) return static::familiarSinAlumnoSeleccionado($request);
+        // Si no hay alumno seleccionado, mostrar solo el selector
+        if ($request->session()->get('alumno') == null) {
+            return static::familiarSinAlumnoSeleccionado($request);
+        }
 
+        // Si hay alumno seleccionado, mostrar vista en blanco (solo sidebar con info del alumno)
         $header = Utils::crearHeaderConAlumnos($request);
 
         $page = CRUDTablePage::new()
-            ->title("Selección de Alumno")
+            ->title("Inicio")
             ->header($header)
             ->sidebar(new FamiliarSidebarComponent());
-        
-        $content = CRUDTableComponent::new()
-            ->title("Página principal");
 
+        // No se agrega contenido - la página quedará en blanco mostrando solo el sidebar
         return $page->render();
     }
 
@@ -57,14 +59,14 @@ class HomeController extends Controller {
         }else{
             $header->alumnos = [];
         }
-        
+
         $alumnoSesion = $request->session()->get('alumno');
         $header->alumnoSeleccionado = $alumnoSesion;
 
         $page = CRUDTablePage::new()
             ->title("Selección de Alumno")
             ->header($header);
-        
+
         $content = CRUDTableComponent::new()
             ->title("Página principal");
 

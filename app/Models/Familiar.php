@@ -41,7 +41,9 @@ class Familiar extends Model
     public function alumnos()
     {
         return $this->belongsToMany(Alumno::class, 'composiciones_familiares', 'id_familiar', 'id_alumno')
-        ->withPivot('parentesco')
+        ->wherePivot('estado', true)
+        ->where('alumnos.estado', true)
+        ->withPivot('parentesco', 'estado')
         ->withTimestamps();
     }
 
