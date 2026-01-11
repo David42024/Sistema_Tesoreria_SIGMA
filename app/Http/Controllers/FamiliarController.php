@@ -19,6 +19,7 @@ use App\Helpers\RequestHelper;
 use App\Helpers\TableAction;
 use App\Helpers\Tables\AdministrativoHeaderComponent;
 use App\Helpers\Tables\AdministrativoSidebarComponent;
+use App\Helpers\Home\Familiar\FamiliarSidebarComponent;
 use App\Helpers\Tables\CautionModalComponent;
 use App\Helpers\Tables\CRUDTableComponent;
 use App\Helpers\Tables\FilterConfig;
@@ -488,12 +489,19 @@ class FamiliarController extends Controller
             abort(404, 'No se encontró información del familiar.');
         }
 
+        // Crear página con el sidebar y header correctos de Familiar
+        $page = CRUDTablePage::new()
+            ->title('Cambiar Contraseña')
+            ->sidebar(new FamiliarSidebarComponent());
+
         $data = [
             'return' => route('familiar_cambiar_password_view'),
             'username' => $user->username
         ];
 
-        return view('gestiones.familiar.change_password', compact('data'));
+        $page->content(view('gestiones.familiar.change_password', compact('data'))->render());
+
+        return $page->render();
     }
 
     /**

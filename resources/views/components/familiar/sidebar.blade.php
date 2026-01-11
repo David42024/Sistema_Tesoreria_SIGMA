@@ -2,7 +2,7 @@
 
 @section('opciones')
 
-    {{-- Gestión Académica --}}
+    {{-- Datos personales --}}
     @can('access-resource', 'datos')
         @include('components.para-sidebar.dropdown-button', [
             'name' => 'Datos personales',
