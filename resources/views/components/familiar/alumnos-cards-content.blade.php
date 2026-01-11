@@ -1,215 +1,61 @@
 @if(count($alumnos) > 0)
 <div class="container-fluid py-4">
-    <style>
-        .cards-container {
-            display: flex;
-            flex-wrap: nowrap;
-            gap: 1.5rem;
-            overflow-x: auto;
-            padding: 1rem 0;
-            scroll-behavior: smooth;
-            justify-content: center;
-        }
-
-        .cards-container::-webkit-scrollbar {
-            height: 8px;
-        }
-
-        .cards-container::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-
-        .cards-container::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 10px;
-        }
-
-        .cards-container::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-
-        .student-card {
-            min-width: 280px;
-            max-width: 320px;
-            flex: 0 0 auto;
-            border-radius: 20px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .student-card:hover {
-            transform: translateY(-5px) scale(1.02);
-            box-shadow: 0 12px 30px rgba(0,0,0,0.2);
-        }
-
-        .card-gradient-1 { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
-        .card-gradient-2 { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
-        .card-gradient-3 { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
-        .card-gradient-4 { background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%); }
-        .card-gradient-5 { background: linear-gradient(135deg, #fad0c4 0%, #ffd1ff 100%); }
-        .card-gradient-6 { background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%); }
-
-        .student-photo {
-            width: 120px;
-            height: 120px;
-            object-fit: cover;
-            border: 4px solid white;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-            margin: 0 auto;
-            display: block;
-        }
-
-        .student-name {
-            color: #2c3e50;
-            font-weight: 700;
-            font-size: 1.1rem;
-            margin-top: 0.8rem;
-            margin-bottom: 0.8rem;
-            line-height: 1.3;
-            min-height: 2.6rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .info-box {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 12px;
-            padding: 1rem;
-            margin-top: 0.8rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        .info-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 0.6rem;
-            color: #34495e;
-            font-size: 0.85rem;
-        }
-
-        .info-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .info-item i {
-            color: #3498db;
-            width: 22px;
-            font-size: 1rem;
-            margin-right: 8px;
-            flex-shrink: 0;
-        }
-
-        .info-item span {
-            text-align: left;
-            flex: 1;
-        }
-
-        .btn-select {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            color: white;
-            padding: 0.6rem 1.5rem;
-            border-radius: 20px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            margin-top: 1rem;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-            font-size: 0.9rem;
-        }
-
-        .btn-select:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.25);
-            color: white;
-        }
-
-        .card-body {
-            padding: 1.5rem 1.2rem !important;
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-        }
-
-        /* Responsive design */
-        @media (max-width: 768px) {
-            .cards-container {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-
-            .student-card {
-                min-width: 260px;
-                max-width: 100%;
-            }
-        }
-
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .cards-container {
-                justify-content: center;
-            }
-        }
-
-        @media (min-width: 1025px) {
-            .cards-container {
-                justify-content: center;
-            }
-        }
-    </style>
-
-    <div class="cards-container">
+    <div class="flex flex-nowrap gap-6 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 dark:scrollbar-thumb-gray-600 dark:scrollbar-track-gray-800 snap-x snap-mandatory px-4 md:px-0 justify-center" style="-webkit-overflow-scrolling: touch;">
         @foreach($alumnos as $index => $alumno)
             @php
                 $matriculaActiva = \App\Models\Matricula::where('id_alumno', $alumno['id_alumno'])
                     ->where('estado', true)
                     ->orderBy('año_escolar', 'desc')
                     ->first();
-                $gradientClass = 'card-gradient-' . (($index % 6) + 1);
+                $gradientClass = match($index % 6) {
+                    0 => 'bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-800 dark:to-indigo-900',
+                    1 => 'bg-gradient-to-br from-amber-50 to-orange-100 dark:from-amber-800 dark:to-orange-900',
+                    2 => 'bg-gradient-to-br from-pink-50 to-purple-100 dark:from-pink-800 dark:to-purple-900',
+                    3 => 'bg-gradient-to-br from-cyan-50 to-blue-100 dark:from-cyan-800 dark:to-blue-900',
+                    4 => 'bg-gradient-to-br from-rose-50 to-pink-100 dark:from-rose-800 dark:to-pink-900',
+                    5 => 'bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-purple-800 dark:to-indigo-900',
+                    default => 'bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700'
+                };
                 $foto = isset($alumno['foto']) && $alumno['foto']
                     ? asset('storage/' . $alumno['foto'])
                     : asset('storage/fotos/alumnos/default.jpg');
             @endphp
-            <div class="card student-card {{ $gradientClass }}" onclick="seleccionarAlumno({{ $alumno['id_alumno'] }})">
-                <div class="card-body text-center">
+            <div class="flex-shrink-0 w-72 rounded-3xl overflow-hidden transition-all duration-300 ease-in-out cursor-pointer shadow-lg hover:shadow-2xl hover:-translate-y-2 hover:scale-[1.02] border border-gray-200 dark:border-gray-700 {{ $gradientClass }}" onclick="seleccionarAlumno({{ $alumno['id_alumno'] }})">
+                <div class="p-6 text-center dark:bg-gray-800 flex flex-col justify-between flex-1 h-full">
                     {{-- Foto --}}
-                    <div class="mb-2 d-flex justify-content-center">
-                        <img src="{{ $foto }}" alt="Foto" class="rounded-circle student-photo">
+                    <div class="mb-3 flex justify-center">
+                        <img src="{{ $foto }}" alt="Foto" class="w-32 h-32 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-lg">
                     </div>
 
                     {{-- Nombre --}}
-                    <h5 class="student-name">
+                    <h5 class="text-gray-800 dark:text-gray-100 font-bold text-lg leading-tight min-h-[2.6rem] flex items-center justify-center mb-3">
                         {{ $alumno['primer_nombre'] }} {{ $alumno['apellido_paterno'] }} {{ $alumno['apellido_materno'] }}
                     </h5>
 
                     {{-- Info box --}}
-                    <div class="info-box">
-                        <div class="info-item">
-                            <i class="fas fa-id-card"></i>
-                            <span><strong>DNI:</strong> {{ $alumno['dni'] }}</span>
+                    <div class="bg-white/95 dark:bg-gray-700/95 backdrop-blur-sm rounded-2xl p-4 mb-4 shadow-md border border-gray-100 dark:border-gray-600">
+                        <div class="info-item flex items-center mb-1.5 text-gray-600 dark:text-gray-300 text-sm last:mb-0">
+                            <i class="fas fa-id-card text-blue-500 w-5 text-base mr-2 flex-shrink-0"></i>
+                            <span class="flex-1"><strong class="text-gray-800 dark:text-gray-200">DNI:</strong> {{ $alumno['dni'] }}</span>
                         </div>
-                        <div class="info-item">
-                            <i class="fas fa-barcode"></i>
-                            <span><strong>Código:</strong> {{ $alumno['codigo_educando'] }}</span>
+                        <div class="info-item flex items-center mb-1.5 text-gray-600 dark:text-gray-300 text-sm last:mb-0">
+                            <i class="fas fa-barcode text-blue-500 w-5 text-base mr-2 flex-shrink-0"></i>
+                            <span class="flex-1"><strong class="text-gray-800 dark:text-gray-200">Código:</strong> {{ $alumno['codigo_educando'] }}</span>
                         </div>
-                        <div class="info-item">
-                            <i class="fas fa-graduation-cap"></i>
-                            <span><strong>Grado:</strong> {{ $matriculaActiva?->grado?->nombre_grado ?? 'N/A' }}</span>
+                        <div class="info-item flex items-center mb-1.5 text-gray-600 dark:text-gray-300 text-sm last:mb-0">
+                            <i class="fas fa-graduation-cap text-blue-500 w-5 text-base mr-2 flex-shrink-0"></i>
+                            <span class="flex-1"><strong class="text-gray-800 dark:text-gray-200">Grado:</strong> {{ $matriculaActiva?->grado?->nombre_grado ?? 'N/A' }}</span>
                         </div>
-                        <div class="info-item">
-                            <i class="fas fa-users"></i>
-                            <span><strong>Sección:</strong> {{ $matriculaActiva?->nombreSeccion ?? 'N/A' }}</span>
+                        <div class="info-item flex items-center mb-1.5 text-gray-600 dark:text-gray-300 text-sm last:mb-0">
+                            <i class="fas fa-users text-blue-500 w-5 text-base mr-2 flex-shrink-0"></i>
+                            <span class="flex-1"><strong class="text-gray-800 dark:text-gray-200">Sección:</strong> {{ $matriculaActiva?->nombreSeccion ?? 'N/A' }}</span>
                         </div>
                     </div>
 
                     {{-- Botón --}}
-                    <button type="button" class="btn btn-select" onclick="event.stopPropagation(); seleccionarAlumno({{ $alumno['id_alumno'] }})">
-                        <i class="fas fa-arrow-right me-2"></i>Seleccionar
+                    <button type="button" class="bg-gradient-to-r from-blue-600 to-indigo-600 dark:bg-gray-700/95 hover:from-blue-700 hover:to-indigo-700 dark:from-transparent dark:to-transparent
+                    dark:hover:bg-gray-600/95 text-white py-2.5 px-6 rounded-full font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 mt-auto mx-auto flex items-center justify-center w-full text-sm" onclick="event.stopPropagation(); seleccionarAlumno({{ $alumno['id_alumno'] }})">
+                        <i class="fas fa-arrow-right mr-2"></i>Seleccionar
                     </button>
                 </div>
             </div>
@@ -242,45 +88,12 @@ function seleccionarAlumno(idAlumno) {
 @else
 {{-- Tarjeta cuando no hay alumnos vinculados --}}
 <div class="container-fluid py-4">
-    <style>
-        .no-students-card {
-            max-width: 500px;
-            margin: 3rem auto;
-            border-radius: 20px;
-            overflow: hidden;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-            padding: 3rem 2rem;
-            text-align: center;
-        }
-
-        .no-students-icon {
-            font-size: 4rem;
-            color: white;
-            margin-bottom: 1.5rem;
-        }
-
-        .no-students-title {
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-
-        .no-students-message {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1rem;
-            line-height: 1.6;
-            margin-bottom: 0;
-        }
-    </style>
-
-    <div class="no-students-card">
-        <div class="no-students-icon">
+    <div class="max-w-md mx-auto mt-12 rounded-3xl overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-800 shadow-2xl p-12 text-center border border-blue-200 dark:border-blue-800">
+        <div class="text-white text-6xl mb-6">
             <i class="fas fa-user-slash"></i>
         </div>
-        <h3 class="no-students-title">No hay alumnos vinculados</h3>
-        <p class="no-students-message">
+        <h3 class="text-white text-2xl font-bold mb-4">No hay alumnos vinculados</h3>
+        <p class="text-white/90 text-base leading-relaxed">
             Actualmente no tienes ningún alumno asociado a tu cuenta.<br>
             Por favor, contacta con el administrador del sistema para vincular alumnos.
         </p>
