@@ -247,7 +247,7 @@ class MatriculaController extends Controller
                 $table->rows,
                 [
                     $itemmatricula->id_matricula,
-                    $itemmatricula->fecha_matricula,
+                    Carbon::parse($itemmatricula->fecha_matricula)->format('d/m/Y'),
                     $itemmatricula->año_escolar,
                     $itemmatricula->alumno->apellido_paterno . ' ' . $itemmatricula->alumno->apellido_materno . ' ' . $itemmatricula->alumno->primer_nombre . ' ' . $itemmatricula->alumno->otros_nombres,
                     $itemmatricula->grado->nivelEducativo->nombre_nivel,

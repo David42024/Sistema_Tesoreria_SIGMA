@@ -357,8 +357,7 @@ class AlumnoController extends Controller
     public function createNewEntry(Request $request)
     {
         $request->validate([
-            'código_modular' => 'required|string|max:20',
-            'código_educando' => 'required|string|max:20',
+            'código_modular' => 'nullable|string|max:20',
             'año_de_ingreso' => 'required|integer|min:1900|max:2100',
             'd_n_i' => 'required|string|max:8|unique:alumnos,dni',
             'apellido_paterno' => 'required|string|max:50',
@@ -390,11 +389,8 @@ class AlumnoController extends Controller
             'número_de_habitantes' => 'nullable|integer|min:1|max:20',
             'situación_de_vivienda' => 'required|string|max:100',
             'escala' => 'required|in:A,B,C,D,E',
+            'foto' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
         ], [
-            'código_modular.required' => 'Ingrese un código modular válido.',
-            'código_modular.max' => 'El código modular no puede superar los 20 caracteres.',
-            'código_educando.required' => 'Ingrese un código educando válido.',
-            'código_educando.max' => 'El código educando no puede superar los 20 caracteres.',
             'año_de_ingreso.required' => 'El año de ingreso es obligatorio.',
             'año_de_ingreso.integer' => 'El año de ingreso debe ser un número.',
             'año_de_ingreso.min' => 'El año de ingreso debe ser mayor o igual a 1900.',
@@ -451,19 +447,32 @@ class AlumnoController extends Controller
             'número_de_habitantes.integer' => 'El número de habitantes debe ser un número válido.',
             'situación_de_vivienda.required' => 'Ingrese una situación de vivienda válida.',
             'situación_de_vivienda.max' => 'La situación de vivienda no puede superar los 100 caracteres.',
-            'escala.in' => 'La escala debe ser A, B, C, D o E.'
+            'escala.in' => 'La escala debe ser A, B, C, D o E.',
+            'foto.image' => 'El archivo debe ser una imagen.',
+            'foto.mimes' => 'La foto debe ser un archivo tipo: jpeg, jpg, png.',
+            'foto.max' => 'La foto no debe superar los 2MB.',
         ]);
 
         $codigoModular = $request->input('código_modular');
-        $codigoEducando = $request->input('código_educando');
         $añoIngreso = $request->input('año_de_ingreso');
         $dni = $request->input('d_n_i');
         $apellidoPaterno = $request->input('apellido_paterno');
         $apellidoMaterno = $request->input('apellido_materno');
         $primerNombre = $request->input('primer_nombre');
         $otrosNombres = $request->input('otros_nombres', '');
-        $sexo = $request->input('sexo');
         $fechaNacimiento = $request->input('fecha_nacimiento');
+        
+        // Generar código educando automáticamente
+        $codigoEducando = $this->generateCodigoEducando(
+            $dni, 
+            $fechaNacimiento, 
+            $añoIngreso, 
+            $apellidoPaterno, 
+            $apellidoMaterno, 
+            $primerNombre, 
+            $otrosNombres
+        );
+        $sexo = $request->input('sexo');
         $pais = $request->input('pais');
         $departamento = $request->input('departamento');
         $provincia = $request->input('provincia');
@@ -489,10 +498,18 @@ class AlumnoController extends Controller
         $situacionVivienda = $request->input('situación_de_vivienda');
         $escala = $request->input('escala', null);
 
+        // Procesar foto si se subió
+        $fotoPath = null;
+        if ($request->hasFile('foto')) {
+            $file = $request->file('foto');
+            $fileName = 'alumno_' . $dni . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $fotoPath = $file->storeAs('fotos_alumnos', $fileName, 'public');
+        }
+
 
         $studentData = [
             'código_modular' => $request->input('código_modular'),
-            'código_educando' => $request->input('código_educando'),
+            'código_educando' => $codigoEducando,
             'año_de_ingreso' => $request->input('año_de_ingreso'),
             'd_n_i' => $request->input('d_n_i'),
             'apellido_paterno' => $request->input('apellido_paterno'),
@@ -524,6 +541,7 @@ class AlumnoController extends Controller
             'número_de_habitantes' => $request->input('número_de_habitantes'),
             'situación_de_vivienda' => $request->input('situación_de_vivienda'),
             'escala' => $request->input('escala'),
+            'foto' => $fotoPath,
         ];
 
         // Si va a definir familiares, guardar en sesión y redirigir
@@ -568,11 +586,15 @@ class AlumnoController extends Controller
             'num_habitaciones' => $numHabitaciones,
             'num_habitantes' => $numHabitantes,
             'situacion_vivienda' => $situacionVivienda,
-            'escala' => $escala
+            'escala' => $escala,
+            'foto' => $fotoPath
         ]);
 
         $alumno->save();
         session()->forget('temp_student_data');
+        
+        // Guardar código educando en sesión para mostrar en modal
+        session()->flash('codigo_educando', $codigoEducando);
 
         return redirect()->route('alumno_view', [
             'created' => true
@@ -920,6 +942,7 @@ class AlumnoController extends Controller
                 'numero_de_habitantes' => $requested->num_habitantes,
                 'situacion_de_vivienda' => $requested->situacion_vivienda,
                 'escala' => $requested->escala,
+                'foto' => $requested->foto,
             ]
         ];
         return view('gestiones.alumno.edit', compact('data'));
@@ -935,7 +958,7 @@ class AlumnoController extends Controller
             'codigo_modular' => 'required|string|max:20',
             'codigo_educando' => 'required|string|max:20',
             'año_de_ingreso' => 'required|integer|min:1900|max:2100',
-            'd_n_i' => 'required|string|max:8|unique:alumnos,dni',
+            'd_n_i' => 'required|string|max:8|unique:alumnos,dni,' . $id . ',id_alumno',
             'apellido_paterno' => 'required|string|max:50',
             'apellido_materno' => 'required|string|max:50',
             'primer_nombre' => 'required|string|max:50',
@@ -964,7 +987,8 @@ class AlumnoController extends Controller
             'numero_de_habitaciones' => 'nullable|integer|min:1|max:20',
             'numero_de_habitantes' => 'nullable|integer|min:1|max:20',
             'situacion_de_vivienda' => 'required|string|max:100',
-            'escala' => 'nullable|in:A,B,C,D',
+            'escala' => 'nullable|in:A,B,C,D,E',
+            'foto' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
         ], [
             'codigo_modular.required' => 'Ingrese un código modular válido.',
             'codigo_modular.max' => 'El código modular no puede superar los 20 caracteres.',
@@ -1024,7 +1048,10 @@ class AlumnoController extends Controller
             'numero_de_habitantes.min' => 'Mínimo número de habitantes = 1.',
             'situacion_de_vivienda.required' => 'Ingrese una situación de vivienda válida.',
             'situacion_de_vivienda.max' => 'La situación de vivienda no puede superar los 100 caracteres.',
-            'escala.in' => 'La escala debe ser A, B, C o D.',
+            'escala.in' => 'La escala debe ser A, B, C, D o E.',
+            'foto.image' => 'El archivo debe ser una imagen.',
+            'foto.mimes' => 'La foto debe ser un archivo tipo: jpeg, jpg, png.',
+            'foto.max' => 'La foto no debe superar los 2MB.',
         ]);
 
 
@@ -1065,6 +1092,20 @@ class AlumnoController extends Controller
             $newSituacionVivienda = $request->input('situacion_de_vivienda');
             $newEscala = $request->input('escala', null);
 
+            // Procesar foto si se subió una nueva
+            $fotoPath = $requested->foto; // Mantener la foto existente por defecto
+            if ($request->hasFile('foto')) {
+                // Eliminar foto anterior si existe
+                if ($requested->foto && \Storage::disk('public')->exists($requested->foto)) {
+                    \Storage::disk('public')->delete($requested->foto);
+                }
+                
+                // Guardar nueva foto
+                $file = $request->file('foto');
+                $fileName = 'alumno_' . $newDni . '_' . time() . '.' . $file->getClientOriginalExtension();
+                $fotoPath = $file->storeAs('fotos_alumnos', $fileName, 'public');
+            }
+
             $requested->update([
                 'codigo_modular' => $newCodigoModular,
                 'codigo_educando' => $newCodigoEducando,
@@ -1098,7 +1139,8 @@ class AlumnoController extends Controller
                 'num_habitaciones' => $newNumHabitaciones,
                 'num_habitantes' => $newNumHabitantes,
                 'situacion_vivienda' => $newSituacionVivienda,
-                'escala' => $newEscala
+                'escala' => $newEscala,
+                'foto' => $fotoPath
             ]);
         }
 
@@ -1162,5 +1204,53 @@ class AlumnoController extends Controller
         );
 
         return $exporterService->exportAsResponse($request, $exportRequest);
+    }
+
+    /**
+     * Genera un código educando único de 9 dígitos
+     * Formato: [2 dígitos más altos DNI][2 dígitos año nacimiento][2 dígitos año ingreso][2 dígitos longitud nombre][1 dígito secuencial]
+     * Ejemplo: DNI 61370146, nace 2004, ingresa 2026, nombre 30 chars -> 760426301
+     */
+    private function generateCodigoEducando($dni, $fechaNacimiento, $añoIngreso, $apellidoPaterno, $apellidoMaterno, $primerNombre, $otrosNombres)
+    {
+        // 1. Extraer los 2 dígitos más altos del DNI
+        $dniStr = strval($dni);
+        $maxPair = 0;
+        for ($i = 0; $i < strlen($dniStr) - 1; $i++) {
+            $pair = intval(substr($dniStr, $i, 2));
+            if ($pair > $maxPair) {
+                $maxPair = $pair;
+            }
+        }
+        $digitosDni = str_pad($maxPair, 2, '0', STR_PAD_LEFT);
+
+        // 2. Extraer los últimos 2 dígitos del año de nacimiento
+        $añoNacimiento = date('y', strtotime($fechaNacimiento));
+
+        // 3. Extraer los últimos 2 dígitos del año de ingreso
+        $añoIngresoCorto = substr($añoIngreso, -2);
+
+        // 4. Calcular longitud del nombre completo
+        $nombreCompleto = trim($apellidoPaterno . $apellidoMaterno . $primerNombre . $otrosNombres);
+        $longitudNombre = strlen($nombreCompleto);
+        $longitudStr = str_pad($longitudNombre, 2, '0', STR_PAD_LEFT);
+
+        // 5. Generar número secuencial
+        $baseCode = $digitosDni . $añoNacimiento . $añoIngresoCorto . $longitudStr;
+        $secuencial = 1;
+        $codigoEducando = $baseCode . $secuencial;
+
+        // Verificar unicidad
+        while (Alumno::where('codigo_educando', $codigoEducando)->exists()) {
+            $secuencial++;
+            if ($secuencial > 9) {
+                // Si llegamos a 10, reiniciar y buscar otra combinación
+                $secuencial = 0;
+                break;
+            }
+            $codigoEducando = $baseCode . $secuencial;
+        }
+
+        return $codigoEducando;
     }
 }

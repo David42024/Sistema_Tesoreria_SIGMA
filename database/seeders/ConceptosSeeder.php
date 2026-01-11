@@ -91,15 +91,15 @@ class ConceptosSeeder extends Seeder
 
         $niveleseducativos = [
             [
-                'nombre_nivel'=>'Inicial',
+                'nombre_nivel'=>'INICIAL',
                 'descripcion'=> 'Educación Inicial',
             ],
             [
-                'nombre_nivel'=>'Primaria',
+                'nombre_nivel'=>'PRIMARIA',
                 'descripcion'=> 'Educación Primaria',
             ],
             [
-                'nombre_nivel'=>'Secundaria',
+                'nombre_nivel'=>'SECUNDARIA',
                 'descripcion'=> 'Educación Secundaria',
             ],
         ];
@@ -120,13 +120,13 @@ class ConceptosSeeder extends Seeder
 
         foreach ($datosniveleseducativos as $nivel) {
 
-            if ($nivel->nombre_nivel === 'Inicial') {
+            if ($nivel->nombre_nivel === 'INICIAL') {
                 $grados = [
                     '3 AÑOS',
                     '4 AÑOS',
                     '5 AÑOS'
                 ];
-            } elseif($nivel->nombre_nivel === 'Primaria') {
+            } elseif($nivel->nombre_nivel === 'PRIMARIA') {
                 $grados = [
                     'PRIMERO',
                     'SEGUNDO',
@@ -196,7 +196,7 @@ class ConceptosSeeder extends Seeder
         $datoscursos = [];
         foreach ($datosniveleseducativos as $nivel) {
             foreach ($cursos as $curso) {
-                if($nivel->nombre_nivel == "Inicial"){
+                if($nivel->nombre_nivel == "INICIAL"){
                     if(!$curso['nivel_inicial']){
 
                     }else{
@@ -242,7 +242,7 @@ class ConceptosSeeder extends Seeder
         $datossecciones = [];
 
         $secciones = [
-            'A','B','C'
+            'A','B','C','D','E'
         ];
 
         foreach($datosgrados as $grado){
@@ -276,13 +276,13 @@ class ConceptosSeeder extends Seeder
 
             // Determinar departamento según nivel
             switch ($nivel->nombre_nivel) {
-                case 'Inicial':
+                case 'INICIAL':
                     $departamento = collect($datosdepartamentos)->firstWhere('nombre', 'Personal Docente Inicial');
                     break;
-                case 'Primaria':
+                case 'PRIMARIA':
                     $departamento = collect($datosdepartamentos)->firstWhere('nombre', 'Personal Docente Primaria');
                     break;
-                case 'Secundaria':
+                case 'SECUNDARIA':
                     $departamento = collect($datosdepartamentos)->firstWhere('nombre', 'Personal Docente Secundaria');
                     break;
             }

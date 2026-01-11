@@ -878,17 +878,24 @@ class OrdenPagoController extends Controller
                     'alumnos.apellido_paterno',
                     'alumnos.apellido_materno',
                     'alumnos.dni',
+                    'alumnos.año_ingreso',
+                    'alumnos.sexo',
+                    'alumnos.foto',
+                    'alumnos.escala',
                     'matriculas.id_matricula',
                     'grados.nombre_grado',
                     'matriculas.nombreSeccion',
                     'niveles_educativos.nombre_nivel'
                 )
-                ->join('matriculas', 'alumnos.id_alumno', '=', 'matriculas.id_alumno')
-                ->join('grados', 'matriculas.id_grado', '=', 'grados.id_grado')
-                ->join('niveles_educativos', 'grados.id_nivel', '=', 'niveles_educativos.id_nivel')
-                ->where('matriculas.estado', true);
+                ->leftJoin('matriculas', function($join) {
+                    $join->on('alumnos.id_alumno', '=', 'matriculas.id_alumno')
+                         ->where('matriculas.estado', true);
+                })
+                ->leftJoin('grados', 'matriculas.id_grado', '=', 'grados.id_grado')
+                ->leftJoin('niveles_educativos', 'grados.id_nivel', '=', 'niveles_educativos.id_nivel')
+                ->where('alumnos.estado', '1');
 
-            // Aplicar búsqueda por nombre solo si hay texto
+            // Aplicar búsqueda por nombre, DNI o código
             if (strlen($termino) >= 2) {
                 $query->where(function($q) use ($termino) {
                     $q->where('alumnos.primer_nombre', 'LIKE', "%{$termino}%")
@@ -896,8 +903,12 @@ class OrdenPagoController extends Controller
                       ->orWhere('alumnos.apellido_paterno', 'LIKE', "%{$termino}%")
                       ->orWhere('alumnos.apellido_materno', 'LIKE', "%{$termino}%")
                       ->orWhere('alumnos.codigo_educando', 'LIKE', "%{$termino}%")
+                      ->orWhere('alumnos.dni', 'LIKE', "%{$termino}%")
                       ->orWhereRaw("CONCAT(alumnos.primer_nombre, ' ', alumnos.apellido_paterno) LIKE ?", ["%{$termino}%"])
-                      ->orWhereRaw("CONCAT(alumnos.primer_nombre, ' ', alumnos.apellido_paterno, ' ', alumnos.apellido_materno) LIKE ?", ["%{$termino}%"]);
+                      ->orWhereRaw("CONCAT(alumnos.primer_nombre, ' ', alumnos.otros_nombres) LIKE ?", ["%{$termino}%"])
+                      ->orWhereRaw("CONCAT(alumnos.primer_nombre, ' ', alumnos.apellido_paterno, ' ', alumnos.apellido_materno) LIKE ?", ["%{$termino}%"])
+                      ->orWhereRaw("CONCAT(alumnos.primer_nombre, ' ', alumnos.otros_nombres, ' ', alumnos.apellido_paterno) LIKE ?", ["%{$termino}%"])
+                      ->orWhereRaw("CONCAT(alumnos.primer_nombre, ' ', alumnos.otros_nombres, ' ', alumnos.apellido_paterno, ' ', alumnos.apellido_materno) LIKE ?", ["%{$termino}%"]);
                 });
             }
 
@@ -925,8 +936,12 @@ class OrdenPagoController extends Controller
                     'codigo_educando' => $alumno->codigo_educando,
                     'nombre_completo' => trim("{$alumno->primer_nombre} {$alumno->otros_nombres} {$alumno->apellido_paterno} {$alumno->apellido_materno}"),
                     'dni' => $alumno->dni ?? 'N/A',
-                    'grado' => $alumno->nombre_grado ?? 'N/A',
-                    'seccion' => $alumno->nombreSeccion ?? 'N/A',
+                    'anio_ingreso' => $alumno->año_ingreso ?? 'N/A',
+                    'sexo' => $alumno->sexo ?? 'M',
+                    'foto' => $alumno->foto ? asset('storage/' . $alumno->foto) : null,
+                    'escala' => $alumno->escala ?? 'No registrada',
+                    'grado' => $alumno->nombre_grado ?? 'Sin matrícula',
+                    'seccion' => $alumno->nombreSeccion ?? '-',
                     'id_matricula' => $alumno->id_matricula
                 ];
             });

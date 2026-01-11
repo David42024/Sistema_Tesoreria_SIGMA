@@ -24,13 +24,13 @@
     <!-- Select Button -->
     <button type="button" 
             id="{{ $componentId }}"
-            class="combo-button w-full px-4 py-3 text-left bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20"
+            class="combo-button w-full h-[46px] px-4 text-left bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20"
             {{ !($enabled ?? true) ? 'disabled' : '' }}>
-        <div class="flex justify-between items-center">
-            <span class="combo-text text-gray-500 dark:text-gray-400">
+        <div class="flex justify-between items-center h-full">
+            <span class="combo-text text-gray-500 dark:text-gray-400 text-sm">
                 {{ $placeholder ?? 'Seleccionar ' . ($label ?? 'opción') . '...' }}
             </span>
-            <svg class="combo-arrow w-5 h-5 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="combo-arrow w-5 h-5 text-gray-400 transition-transform duration-200 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
         </div>
@@ -48,7 +48,8 @@
          class="combo-dropdown absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50" 
          style="display: none;">
         
-        <!-- Search Field -->
+        <!-- Search Field (solo si no está deshabilitado) -->
+        @if(!isset($disableSearch) || $disableSearch === false)
         <div class="p-3 border-b border-gray-200 dark:border-gray-600">
             <input id="{{ $searchId }}"
                    type="text"
@@ -56,6 +57,7 @@
                    placeholder="Buscar..."
                    autocomplete="off">
         </div>
+        @endif
 
         <!-- Options Container -->
         <div class="combo-options max-h-60 overflow-y-auto">
@@ -292,12 +294,13 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             dropdown.style.display = 'block';
             arrow.style.transform = 'rotate(180deg)';
-            searchInput.focus();
+            if (searchInput) searchInput.focus();
         }
     });
 
-    // Search functionality
-    searchInput.addEventListener('input', function() {
+    // Search functionality (solo si existe el input de búsqueda)
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
         const searchTerm = this.value.toLowerCase();
         
         options.forEach(option => {
@@ -322,6 +325,7 @@ document.addEventListener('DOMContentLoaded', function() {
             option.style.display = (matchesSearch && shouldShowByParent) ? 'block' : 'none';
         });
     });
+    }
 
     // Option selection
     options.forEach(option => {
@@ -342,7 +346,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Close dropdown
             dropdown.style.display = 'none';
             arrow.style.transform = 'rotate(0deg)';
-            searchInput.value = '';
+            if (searchInput) searchInput.value = '';
             
             // Reset search filter
            options.forEach(opt => {

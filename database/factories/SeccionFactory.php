@@ -19,7 +19,17 @@ class SeccionFactory extends Factory
     {
         return [
             'id_grado'=> Grado::factory(),
-            'nombreSeccion' => fake()->randomElement(['A', 'B', 'C', 'D', 'E', 'F']),
+            'nombreSeccion' => fake()->randomElement(['A', 'B', 'C', 'D', 'E']),
         ];
+    }
+
+    /**
+     * Estado para sección específica
+     */
+    public function seccion(string $letra): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'nombreSeccion' => strtoupper($letra),
+        ]);
     }
 }

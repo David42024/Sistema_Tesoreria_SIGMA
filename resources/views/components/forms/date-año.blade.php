@@ -5,6 +5,9 @@
 
     <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
     {{ $label }}
+    @if(isset($required) && $required === false)
+        <span class="text-gray-400 text-xs font-normal">(Opcional)</span>
+    @endif
     </label>
 
     <div class="relative w-full">

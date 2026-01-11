@@ -5,6 +5,9 @@
     
     <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
         {{ $label }}
+        @if(isset($required) && $required === false)
+            <span class="text-gray-400 text-xs font-normal">(Opcional)</span>
+        @endif
     </label>
     
     <div class="searchable-select-container relative" data-name="{{ Str::snake($label) }}">
@@ -28,7 +31,8 @@
         
         <!-- Dropdown -->
         <div class="searchable-select-dropdown absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50" style="display: none;">
-            <!-- Campo de búsqueda -->
+            <!-- Campo de búsqueda (solo si no está deshabilitado) -->
+            @if(!isset($disableSearch) || $disableSearch === false)
             <div class="p-3 border-b border-gray-200 dark:border-gray-600">
                 <input 
                     type="text" 
@@ -37,6 +41,7 @@
                     autocomplete="off"
                 >
             </div>
+            @endif
             
             <!-- Lista de opciones -->
             <div class="searchable-select-options max-h-60 overflow-y-auto">
@@ -80,6 +85,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const containers = document.querySelectorAll('.searchable-select-container');
     
     containers.forEach(container => {
+        // Evitar doble inicialización
+        if (container.dataset.initialized === 'true') {
+            return;
+        }
+        container.dataset.initialized = 'true';
+        
         initSearchableSelect(container);
     });
     
@@ -140,10 +151,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Real-time search
-        searchInput.addEventListener('input', function() {
-            filterOptions(this.value);
-        });
+        // Real-time search (solo si existe el input de búsqueda)
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                filterOptions(this.value);
+            });
+        }
         
         // Option selection
         options.forEach(option => {
@@ -203,11 +216,18 @@ document.addEventListener('DOMContentLoaded', function() {
             isOpen = true;
             
             // Clear search and show all options
-            searchInput.value = '';
-            filterOptions('');
-            
-            // Focus on search input
-            setTimeout(() => searchInput.focus(), 100);
+            if (searchInput) {
+                searchInput.value = '';
+                filterOptions('');
+                
+                // Focus on search input
+                setTimeout(() => searchInput.focus(), 100);
+            } else {
+                // Si no hay buscador, mostrar todas las opciones
+                options.forEach(option => {
+                    option.style.display = 'block';
+                });
+            }
         }
         
         function closeDropdown() {

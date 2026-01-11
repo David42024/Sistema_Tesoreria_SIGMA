@@ -1,18 +1,18 @@
-<table class="min-w-full">
+<table class="min-w-full table-auto">
     <thead class="">
         <tr class="border-gray-100 border-y dark:border-gray-800">
             @foreach($page->columns as $column)
-                <th class="py-3">
+                <th class="py-4 px-4 text-left">
                     <div class="flex items-center">
-                        <p class="font-medium text-gray-900 text-theme-xs dark:text-gray-300">{{ $column }}</p>
+                        <p class="font-semibold text-gray-900 text-sm dark:text-gray-300">{{ $column }}</p>
                     </div>
                 </th>
             @endforeach
 
             @if ($page->actions != null)
-                <th class="py-3">
+                <th class="py-4 px-4 text-left">
                     <div class="flex items-center">
-                        <p class="font-medium text-gray-900 text-theme-xs dark:text-gray-300">
+                        <p class="font-semibold text-gray-900 text-sm dark:text-gray-300">
                         Acción
                         </p>
                     </div>
@@ -22,11 +22,11 @@
     </thead>
     <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
         @foreach($page->rows as $row)
-            <tr>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                 @for ($i = 0; $i < count($page->columns); $i++)
-                    <td class="py-3">
+                    <td class="py-4 px-4">
                         <div class="flex items-center">
-                            <p data-order="{{ $i }}" class="row{{ $row[0] }} text-gray-600 text-theme-sm dark:text-gray-400">
+                            <p data-order="{{ $i }}" class="row{{ $row[0] }} text-gray-600 text-sm dark:text-gray-400">
                                 {{ $row[$i] }}
                             </p>
                         </div>
@@ -34,7 +34,7 @@
                 @endfor
 
                 @if (!empty($page->actions))
-                    <td class="py-3">
+                    <td class="py-4 px-4">
                         <div class="flex gap-4 items-center">
                             @foreach ($page->actions as $action)
                                 {{$action->new(...$row)}}
