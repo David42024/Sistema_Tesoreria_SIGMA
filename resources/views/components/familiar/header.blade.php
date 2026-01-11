@@ -104,7 +104,7 @@
         <form id="seleccion-alumno" method="POST" action="{{ route('principal') }}">
           @csrf
           <div class="relative">
-            <p class="inline mr-4 ml-12 text-gray-800 dark:text-gray-200 text-md lg:ml-0">Sesión iniciada como:</p>
+            <p class="inline mr-4 ml-12 text-gray-800 dark:text-gray-200 text-md lg:ml-0">Seleccione el alumno:</p>
             <select
               id="search-button"
               name="idalumno"

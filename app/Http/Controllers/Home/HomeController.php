@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Home;
 
 use App\Helpers\Home\Familiar\FamiliarHeaderComponent;
 use App\Helpers\Home\Familiar\FamiliarSidebarComponent;
+use App\Helpers\Home\Familiar\AlumnosCardsComponent;
 use App\Http\Controllers\Controller;
 use App\Helpers\CRUDTablePage;
 use App\Helpers\ExcelExportHelper;
@@ -67,8 +68,11 @@ class HomeController extends Controller {
             ->title("Selección de Alumno")
             ->header($header);
 
-        $content = CRUDTableComponent::new()
-            ->title("Página principal");
+        // Agregar las tarjetas de alumnos solo si hay alumnos vinculados
+        if (!empty($header->alumnos)) {
+            $cardsComponent = new AlumnosCardsComponent($header->alumnos);
+            $page->content($cardsComponent);
+        }
 
         return $page->render();
     }
