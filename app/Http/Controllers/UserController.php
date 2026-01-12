@@ -193,7 +193,8 @@ class UserController extends Controller
         $request->validate([
             'username' => 'required|string|max:50|unique:users,username',
             'password' => 'required|string|min:6|confirmed',
-            'tipo' => 'required|in:Administrativo,Familiar,PreApoderado'
+            'tipo' => 'required|in:Administrativo,Familiar,PreApoderado',
+            'foto' => 'nullable|image|mimes:jpeg,jpg,png|max:2048'
         ], [
             'username.required' => 'El nombre de usuario es obligatorio.',
             'username.unique' => 'El nombre de usuario ya existe.',
@@ -202,14 +203,25 @@ class UserController extends Controller
             'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
             'password.confirmed' => 'Las contraseñas no coinciden.',
             'tipo.required' => 'El tipo de usuario es obligatorio.',
-            'tipo.in' => 'El tipo de usuario no es válido.'
+            'tipo.in' => 'El tipo de usuario no es válido.',
+            'foto.image' => 'El archivo debe ser una imagen.',
+            'foto.mimes' => 'La foto debe ser un archivo de tipo: jpeg, jpg, png.',
+            'foto.max' => 'La foto no debe ser mayor a 2MB.'
         ]);
+
+        $fotoPath = null;
+        if ($request->hasFile('foto')) {
+            $foto = $request->file('foto');
+            $nombreFoto = 'usuario_' . time() . '_' . uniqid() . '.' . $foto->getClientOriginalExtension();
+            $fotoPath = $foto->storeAs('usuarios', $nombreFoto, 'public');
+        }
 
         $usuario = new User([
             'username' => $request->input('username'),
             'password' => Hash::make($request->input('password')),
             'tipo' => $request->input('tipo'),
-            'estado' => true
+            'estado' => true,
+            'foto' => $fotoPath
         ]);
 
         $usuario->save();
@@ -234,7 +246,8 @@ class UserController extends Controller
             'default' => [
                 'username' => $usuario->username,
                 'tipo' => $usuario->tipo,
-                'estado' => $usuario->estado
+                'estado' => $usuario->estado,
+                'foto' => $usuario->foto
             ]
         ];
 
@@ -253,15 +266,39 @@ class UserController extends Controller
                 Rule::unique('users', 'username')->ignore($usuario->id_usuario, 'id_usuario')
             ],
             'tipo' => 'required|in:Administrativo,Familiar,PreApoderado',
-            'estado' => 'required|boolean'
+            'estado' => 'required|boolean',
+            'foto' => 'nullable|image|mimes:jpeg,jpg,png|max:2048'
         ], [
             'username.required' => 'El nombre de usuario es obligatorio.',
             'username.unique' => 'El nombre de usuario ya existe.',
             'username.max' => 'El nombre de usuario no puede superar los 50 caracteres.',
             'tipo.required' => 'El tipo de usuario es obligatorio.',
             'tipo.in' => 'El tipo de usuario no es válido.',
-            'estado.required' => 'El estado es obligatorio.'
+            'estado.required' => 'El estado es obligatorio.',
+            'foto.image' => 'El archivo debe ser una imagen.',
+            'foto.mimes' => 'La foto debe ser un archivo de tipo: jpeg, jpg, png.',
+            'foto.max' => 'La foto no debe ser mayor a 2MB.'
         ]);
+
+        // Manejar foto
+        if ($request->input('eliminar_foto') == '1') {
+            // Eliminar foto existente
+            if ($usuario->foto && \Storage::disk('public')->exists($usuario->foto)) {
+                \Storage::disk('public')->delete($usuario->foto);
+            }
+            $usuario->foto = null;
+        } elseif ($request->hasFile('foto')) {
+            // Eliminar foto anterior si existe
+            if ($usuario->foto && \Storage::disk('public')->exists($usuario->foto)) {
+                \Storage::disk('public')->delete($usuario->foto);
+            }
+
+            // Subir nueva foto
+            $foto = $request->file('foto');
+            $nombreFoto = 'usuario_' . time() . '_' . uniqid() . '.' . $foto->getClientOriginalExtension();
+            $fotoPath = $foto->storeAs('usuarios', $nombreFoto, 'public');
+            $usuario->foto = $fotoPath;
+        }
 
         // Actualizar datos del usuario
         $usuario->username = $request->input('username');

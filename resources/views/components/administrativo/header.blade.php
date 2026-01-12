@@ -609,18 +609,13 @@
       >
         <a
           id="btn-dropdown-usuario"
-          class="flex items-center text-gray-700 dark:text-gray-400"
+          class="flex items-center gap-3 text-gray-700 dark:text-gray-400"
           href="#"
           @click.prevent="dropdownOpen = ! dropdownOpen"
         >
-        <!--
-          <span class="mr-3 h-11 w-11 overflow-hidden rounded-full">
-            <img src="./images/user/owner.jpg" alt="User" />
-          </span>
-        -->
          @php
             $user = Auth::user();
-            
+
             if ($user->tipo === 'Administrativo' && $user->administrativo) {
                 $name = $user->administrativo->primer_nombre;
                 $apellido = $user->administrativo->apellido_paterno;
@@ -635,13 +630,21 @@
                 $apellido = '';
                 $cargo = $user->tipo;
             }
+
+            $fotoUrl = $user->foto ? asset('storage/' . $user->foto) : null;
         @endphp
 
-          <span class="text-theme-sm mr-1 block font-medium"> {{ $name }}</span>
+          @if($fotoUrl)
+            <span class="h-11 w-11 overflow-hidden rounded-full flex-shrink-0">
+              <img src="{{ $fotoUrl }}" alt="{{ $name }}" class="h-full w-full object-cover" />
+            </span>
+          @else
+            <span class="text-theme-sm block font-medium"> {{ $name }}</span>
+          @endif
 
           <svg
             :class="dropdownOpen && 'rotate-180'"
-            class="stroke-gray-500 dark:stroke-gray-400"
+            class="stroke-gray-500 dark:stroke-gray-400 flex-shrink-0"
             width="18"
             height="20"
             viewBox="0 0 18 20"
@@ -789,7 +792,7 @@
         // Verificar si hay guía activa
         const guiaActiva = localStorage.getItem('guiaPagosActiva');
         const pasoActual = localStorage.getItem('guiaPasoActual');
-        
+
         // Si NO está en modo guía de pagar, limpiar localStorage
         if (guiaActiva !== 'true' || pasoActual !== 'pagarEnLinea') {
           localStorage.removeItem('guiaPagosActiva');

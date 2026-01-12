@@ -16,6 +16,7 @@ class User extends Authenticatable
         'tipo',
         'password',
         'estado',
+        'foto',
     ];
 
     protected $primaryKey = 'id_usuario';
@@ -50,19 +51,19 @@ class User extends Authenticatable
     public function getNameAttribute()
     {
         if ($this->tipo === 'Administrativo' && $this->administrativo) {
-            return trim($this->administrativo->primer_nombre . ' ' . 
+            return trim($this->administrativo->primer_nombre . ' ' .
                        ($this->administrativo->otros_nombres ?? '') . ' ' .
                        $this->administrativo->apellido_paterno . ' ' .
                        $this->administrativo->apellido_materno);
         } elseif ($this->tipo === 'Personal' && $this->personal) {
-            return trim($this->personal->primer_nombre . ' ' . 
+            return trim($this->personal->primer_nombre . ' ' .
                        ($this->personal->otros_nombres ?? '') . ' ' .
                        $this->personal->apellido_paterno . ' ' .
                        $this->personal->apellido_materno);
         } elseif ($this->tipo === 'PreApoderado' && $this->solicitudPrematricula) {
             return $this->solicitudPrematricula->nombre_completo_apoderado;
         }
-        
+
         return ucwords(str_replace('_', ' ', $this->username));
     }
 
@@ -71,7 +72,7 @@ class User extends Authenticatable
         if ($this->tipo === 'PreApoderado' && $this->solicitudPrematricula) {
             return $this->solicitudPrematricula->nombre_completo_apoderado;
         }
-        
+
         return $this->username;
     }
 }
