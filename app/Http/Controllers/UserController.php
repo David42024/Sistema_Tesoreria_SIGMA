@@ -209,11 +209,16 @@ class UserController extends Controller
             'foto.max' => 'La foto no debe ser mayor a 2MB.'
         ]);
 
-        $fotoPath = null;
+        $idArchivo = null;
         if ($request->hasFile('foto')) {
             $foto = $request->file('foto');
             $nombreFoto = 'usuario_' . time() . '_' . uniqid() . '.' . $foto->getClientOriginalExtension();
             $fotoPath = $foto->storeAs('usuarios', $nombreFoto, 'public');
+
+            // Crear registro en tabla archivos
+            $archivo = new \App\Models\Archivo(['foto' => $fotoPath]);
+            $archivo->save();
+            $idArchivo = $archivo->idArchivo;
         }
 
         $usuario = new User([
@@ -221,7 +226,7 @@ class UserController extends Controller
             'password' => Hash::make($request->input('password')),
             'tipo' => $request->input('tipo'),
             'estado' => true,
-            'foto' => $fotoPath
+            'idArchivo' => $idArchivo
         ]);
 
         $usuario->save();
@@ -247,7 +252,7 @@ class UserController extends Controller
                 'username' => $usuario->username,
                 'tipo' => $usuario->tipo,
                 'estado' => $usuario->estado,
-                'foto' => $usuario->foto
+                'foto' => $usuario->archivo ? $usuario->archivo->foto : null
             ]
         ];
 
@@ -283,21 +288,31 @@ class UserController extends Controller
         // Manejar foto
         if ($request->input('eliminar_foto') == '1') {
             // Eliminar foto existente
-            if ($usuario->foto && \Storage::disk('public')->exists($usuario->foto)) {
-                \Storage::disk('public')->delete($usuario->foto);
+            if ($usuario->archivo) {
+                if (\Storage::disk('public')->exists($usuario->archivo->foto)) {
+                    \Storage::disk('public')->delete($usuario->archivo->foto);
+                }
+                $usuario->archivo->delete();
+                $usuario->idArchivo = null;
             }
-            $usuario->foto = null;
         } elseif ($request->hasFile('foto')) {
             // Eliminar foto anterior si existe
-            if ($usuario->foto && \Storage::disk('public')->exists($usuario->foto)) {
-                \Storage::disk('public')->delete($usuario->foto);
+            if ($usuario->archivo) {
+                if (\Storage::disk('public')->exists($usuario->archivo->foto)) {
+                    \Storage::disk('public')->delete($usuario->archivo->foto);
+                }
+                $usuario->archivo->delete();
             }
 
             // Subir nueva foto
             $foto = $request->file('foto');
             $nombreFoto = 'usuario_' . time() . '_' . uniqid() . '.' . $foto->getClientOriginalExtension();
             $fotoPath = $foto->storeAs('usuarios', $nombreFoto, 'public');
-            $usuario->foto = $fotoPath;
+
+            // Crear nuevo registro en archivos
+            $archivo = new \App\Models\Archivo(['foto' => $fotoPath]);
+            $archivo->save();
+            $usuario->idArchivo = $archivo->idArchivo;
         }
 
         // Actualizar datos del usuario

@@ -16,7 +16,7 @@ class User extends Authenticatable
         'tipo',
         'password',
         'estado',
-        'foto',
+        'idArchivo',
     ];
 
     protected $primaryKey = 'id_usuario';
@@ -46,6 +46,11 @@ class User extends Authenticatable
     public function solicitudPrematricula()
     {
         return $this->hasOne(SolicitudPrematricula::class, 'id_usuario', 'id_usuario');
+    }
+
+    public function archivo()
+    {
+        return $this->belongsTo(Archivo::class, 'idArchivo', 'idArchivo');
     }
 
     public function getNameAttribute()

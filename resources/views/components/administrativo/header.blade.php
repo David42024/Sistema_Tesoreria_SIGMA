@@ -631,7 +631,7 @@
                 $cargo = $user->tipo;
             }
 
-            $fotoUrl = $user->foto ? asset('storage/' . $user->foto) : null;
+            $fotoUrl = ($user->archivo && $user->archivo->foto) ? asset('storage/' . $user->archivo->foto) : null;
         @endphp
 
           @if($fotoUrl)

@@ -605,7 +605,7 @@
             $familiar = App\Models\Familiar::whereEstado(true)->whereIdUsuario($user->getKey())->first();
             $name = $familiar->primer_nombre . " " . $familiar->apellido_paterno;
             $cargo = 'Apoderado';
-            $fotoUrl = $user->foto ? asset('storage/' . $user->foto) : null;
+            $fotoUrl = ($user->archivo && $user->archivo->foto) ? asset('storage/' . $user->archivo->foto) : null;
           @endphp
 
           @if($fotoUrl)
