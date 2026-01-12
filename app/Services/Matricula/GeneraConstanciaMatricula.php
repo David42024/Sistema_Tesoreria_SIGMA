@@ -7,6 +7,7 @@ use App\Interfaces\IGeneraConstanciaComoResponse;
 use App\Models\Matricula;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Barryvdh\Snappy\Facades\SnappyPdf;
 use Illuminate\Support\Facades\Auth;
 
 class GeneraConstanciaMatricula implements IGeneraConstancia, IGeneraConstanciaComoResponse
@@ -38,7 +39,7 @@ class GeneraConstanciaMatricula implements IGeneraConstancia, IGeneraConstanciaC
 
         $admin = $operador->administrativo;
 
-        $pdf = Pdf::loadView($this->template, [
+        $pdf = SnappyPdf::loadView($this->template, [
             'operator_name' => join(' ', [$admin->apellido_paterno, $admin->primer_nombre]),
             'operator_username' => $operador->username,
             'student_dni' => $alumno->dni,
@@ -49,7 +50,20 @@ class GeneraConstanciaMatricula implements IGeneraConstancia, IGeneraConstanciaC
             'section' => $matricula->seccion->nombreSeccion,
         ]);
 
-        $pdf->setOptions($this->getDefaultOptions());
+        $pdf->setOptions([
+            'page-size' => 'A4',
+            'viewport-size' => '1280x1024', // Standard viewport
+            'margin-top' => 0,
+            'margin-right' => 0,
+            'margin-bottom' => 0,
+            'margin-left' => 0,
+            'orientation' => 'Portrait',
+            // Override global settings to ensure standard A4 behavior
+            'disable-smart-shrinking' => true,
+            'dpi' => 96,
+            'zoom' => 1,
+            'enable-local-file-access' => true,
+        ]);
 
         return $pdf;
     }

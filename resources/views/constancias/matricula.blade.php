@@ -11,86 +11,86 @@
             padding: 0;
         }
 
+        @font-face {
+            font-family: 'Arial';
+            src: url('{{ str_replace('\\', '/', 'file:///' . storage_path('fonts/arial-unicode.ttf')) }}') format('truetype');
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: 'Times New Roman', Times, serif;
+            font-family: 'Arial', sans-serif;
             margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-            display: flex;
-            justify-content: center;
+            padding: 0;
+            background-color: #fff;
+            width: 100%;
+            height: 100%;
+        }
+
+        .document-container {
+            width: 210mm; /* Force A4 width explicitly */
+            /* A4 height in mm is 297mm. Using min-height ensures footer is at bottom. */
+            min-height: 297mm; 
+            padding: 20mm 25mm; /* Standard margins: Top/Bottom 20mm, Left/Right 25mm */
+            position: relative;
+            background-color: white;
+            overflow: hidden; /* Prevent spillover */
         }
 
         .operator-watermark {
             position: absolute;
-            left: 10mm;
-            bottom: 10mm;
+            left: 5mm;
+            bottom: 30mm;
             transform: rotate(-90deg);
             transform-origin: left bottom;
-            font-size: 16px;
+            font-size: 9px;
             color: #ccc;
-            font-weight: bold;
             white-space: nowrap;
-        }
-
-        @media print {
-            .operator-watermark {
-                left: 5mm;
-            }
-        }
-
-        .document-container {
-            background-color: white;
-            padding: 15mm 20mm;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            box-sizing: border-box;
-            position: relative;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 20px;
         }
 
         .header-top {
-            font-size: 12px;
+            font-size: 14px;
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             text-transform: uppercase;
         }
 
         .college-name {
-            font-size: 24px;
+            font-size: 28px;
             font-weight: bold;
             text-transform: uppercase;
-            margin: 10px 0;
+            margin: 5px 0;
             color: #000;
         }
 
-        .college-details {
-            font-size: 12px;
-        }
-
         .divider {
-            border-bottom: 2px solid #000;
-            margin: 20px 0;
+            border-bottom: 3px solid #000;
+            margin: 15px 0;
             width: 100%;
         }
 
         .title {
             text-align: center;
-            font-size: 26px;
+            font-size: 24px;
             font-weight: bold;
             text-decoration: underline;
-            margin: 40px 0;
+            margin: 30px 0;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
 
         .content {
             font-size: 16px;
-            line-height: 2;
+            line-height: 1.6;
             text-align: justify;
-            margin-bottom: 50px;
+            margin-bottom: 40px;
         }
 
         .student-name {
@@ -99,91 +99,82 @@
             font-size: 18px;
             text-align: center;
             display: block;
-            margin: 20px 0;
+            margin: 15px 0;
         }
 
         .academic-info {
-            margin: 30px 40px;
-            padding: 20px;
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #000;
+            border-radius: 4px;
         }
 
         .info-row {
-            display: flex;
+            display: table;
+            width: 100%;
+            margin-bottom: 8px;
             border-bottom: 1px dotted #ccc;
-            padding-bottom: 5px;
+            padding-bottom: 4px;
         }
-
+        
         .info-row:last-child {
             border-bottom: none;
+            margin-bottom: 0;
         }
 
         .label {
+            display: table-cell;
             font-weight: bold;
-            width: 180px;
+            width: 150px;
+            vertical-align: top;
         }
 
         .value {
-            flex: 1;
-            font-weight: 500;
+            display: table-cell;
+            font-weight: normal;
+            vertical-align: top;
         }
 
         .closing {
-            margin-top: 40px;
+            margin-top: 30px;
+            text-indent: 30px;
         }
 
         .date {
             text-align: right;
-            margin-top: 60px;
+            margin-top: 40px;
             font-size: 16px;
         }
 
         .signature-section {
-            margin-top: 120px;
-            display: flex;
-            justify-content: center;
+            margin-top: 80px;
+            text-align: center;
+            width: 100%;
         }
 
         .signature-box {
+            display: inline-block;
             text-align: center;
         }
 
         .signature-line {
-            width: 300px;
+            width: 250px;
             border-top: 1px solid #000;
-            margin-bottom: 10px;
-            margin-left: auto;
-            margin-right: auto;
+            margin-bottom: 5px;
         }
 
         .footer {
             position: absolute;
-            bottom: 10mm;
-            left: 25mm;
-            right: 25mm;
+            bottom: 15mm;
+            left: 0;
+            width: 100%;
             text-align: center;
             font-size: 10px;
-            color: #666;
-            border-top: 1px solid #eee;
+            color: #444;
+            border-top: 1px solid #aaa;
             padding-top: 10px;
-        }
-
-        @media print {
-            body {
-                background: none;
-                padding: 0;
-            }
-
-            .document-container {
-                box-shadow: none;
-                border: none;
-                width: 100%;
-                height: 100%;
-                margin: 0;
-                padding: 20mm;
-            }
+            padding-left: 25mm;
+            padding-right: 25mm;
         }
     </style>
 </head>
