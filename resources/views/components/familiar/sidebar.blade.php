@@ -41,12 +41,12 @@
                     $matriculaActiva = $alumno->matriculas()->where('estado', true)->orderBy('año_escolar', 'desc')->first();
                 @endphp
                 <p class="text-xs text-gray-600 dark:text-gray-400 text-center mb-3">
-                    <span class="font-medium">Grado:</span> {{ $matriculaActiva?->grado?->nombre_grado ?? 'N/A' }}
+                    <span class="font-medium">Grado:</span> {{ $matriculaActiva?->grado?->nombre_grado ?? 'No Matriculado' }}
                 </p>
 
                 {{-- Sección --}}
                 <p class="text-xs text-gray-600 dark:text-gray-400 text-center mb-3">
-                    <span class="font-medium">Sección:</span> {{ $matriculaActiva?->nombreSeccion ?? 'N/A' }}
+                    <span class="font-medium">Sección:</span> {{ $matriculaActiva?->nombreSeccion ?? 'No Matriculado' }}
                 </p>
 
                 {{-- Botón Ver más --}}
