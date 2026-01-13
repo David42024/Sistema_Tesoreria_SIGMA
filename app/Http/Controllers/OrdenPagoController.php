@@ -86,11 +86,11 @@ class OrdenPagoController extends Controller
 
         foreach ($ordenes as $orden) {
             $alumnoNombre = trim(
-                ($orden->alumno->primer_nombre ?? '') . ' ' . 
-                ($orden->alumno->apellido_paterno ?? '') . ' ' . 
+                ($orden->alumno->primer_nombre ?? '') . ' ' .
+                ($orden->alumno->apellido_paterno ?? '') . ' ' .
                 ($orden->alumno->apellido_materno ?? '')
             );
-            
+
             $grado = $orden->matricula->grado->nombre_grado ?? 'N/A';
             $seccion = $orden->matricula->seccion->nombreSeccion ?? 'N/A';
 
@@ -117,7 +117,7 @@ class OrdenPagoController extends Controller
     public function buscarAlumno($codigo)
     {
         \Log::info('Buscando alumno con código: ' . $codigo);
-        
+
         $alumno = Alumno::where('codigo_educando', $codigo)->first();
 
         \Log::info('Alumno encontrado: ' . ($alumno ? 'SÍ - ID: ' . $alumno->id_alumno : 'NO'));
@@ -149,28 +149,28 @@ class OrdenPagoController extends Controller
         $hoy = Carbon::now();
         $mesActual = Carbon::now()->month;
         $anioActual = Carbon::now()->year;
-        
+
         $meses = [
             'ENERO' => 1, 'FEBRERO' => 2, 'MARZO' => 3, 'ABRIL' => 4,
             'MAYO' => 5, 'JUNIO' => 6, 'JULIO' => 7, 'AGOSTO' => 8,
             'SETIEMBRE' => 9, 'OCTUBRE' => 10, 'NOVIEMBRE' => 11, 'DICIEMBRE' => 12
         ];
-        
+
         // Verificar si hay una orden pendiente (vigente o vencida con deuda)
         $ordenPendiente = OrdenPago::where('id_alumno', $alumno->id_alumno)
             ->where('estado', 'pendiente')
             ->orderBy('fecha_orden_pago', 'desc')
             ->first();
-        
+
         if ($ordenPendiente) {
             $fechaVencimiento = Carbon::parse($ordenPendiente->fecha_vencimiento);
             $ordenVencida = $hoy->greaterThan($fechaVencimiento);
-            
+
             // Calcular pagos realizados
             $pagosRealizados = Pago::where('id_orden', $ordenPendiente->id_orden)
                 ->where('estado', 1)
                 ->sum('monto');
-            
+
             // Si la orden NO está vencida (vigente), siempre bloquear
             if (!$ordenVencida) {
                 return response()->json([
@@ -183,9 +183,9 @@ class OrdenPagoController extends Controller
                     'alumno' => [
                         'id_alumno' => $alumno->id_alumno,
                         'nombre_completo' => trim(
-                            ($alumno->primer_nombre ?? '') . ' ' . 
-                            ($alumno->otros_nombres ?? '') . ' ' . 
-                            ($alumno->apellido_paterno ?? '') . ' ' . 
+                            ($alumno->primer_nombre ?? '') . ' ' .
+                            ($alumno->otros_nombres ?? '') . ' ' .
+                            ($alumno->apellido_paterno ?? '') . ' ' .
                             ($alumno->apellido_materno ?? '')
                         ),
                         'dni' => $alumno->dni,
@@ -201,11 +201,11 @@ class OrdenPagoController extends Controller
                     ]
                 ]);
             }
-            
+
             // Si la orden está vencida PERO tiene pagos parciales, bloquear también
             if ($ordenVencida && $pagosRealizados > 0) {
                 $montoPendiente = $ordenPendiente->monto_total - $pagosRealizados;
-                
+
                 return response()->json([
                     'success' => true,
                     'orden_vencida_con_deuda' => true,
@@ -217,9 +217,9 @@ class OrdenPagoController extends Controller
                     'alumno' => [
                         'id_alumno' => $alumno->id_alumno,
                         'nombre_completo' => trim(
-                            ($alumno->primer_nombre ?? '') . ' ' . 
-                            ($alumno->otros_nombres ?? '') . ' ' . 
-                            ($alumno->apellido_paterno ?? '') . ' ' . 
+                            ($alumno->primer_nombre ?? '') . ' ' .
+                            ($alumno->otros_nombres ?? '') . ' ' .
+                            ($alumno->apellido_paterno ?? '') . ' ' .
                             ($alumno->apellido_materno ?? '')
                         ),
                         'dni' => $alumno->dni,
@@ -235,10 +235,10 @@ class OrdenPagoController extends Controller
                     ]
                 ]);
             }
-            
+
             // Si llegó aquí: orden vencida SIN pagos - permitir continuar (no bloquear)
         }
-        
+
         $todasLasDeudas = Deuda::where('id_alumno', $alumno->id_alumno)
             ->where('estado', true)
             ->whereRaw('monto_a_cuenta < monto_total') // Solo deudas no pagadas completamente
@@ -283,13 +283,13 @@ class OrdenPagoController extends Controller
             }
         }
         $aniosConDeudas = array_unique($aniosConDeudas);
-        
+
         // Si las deudas son de un año diferente al de la primera matrícula,
         // usar la matrícula correspondiente a ese año
         if (!empty($aniosConDeudas)) {
             $anioConMasDeudas = $aniosConDeudas[0]; // Usar el primer año con deudas
             $matriculaDelAnio = $todasMatriculas->firstWhere('año_escolar', $anioConMasDeudas);
-            
+
             if ($matriculaDelAnio) {
                 $matricula = $matriculaDelAnio;
                 \Log::info("Usando matrícula del año {$anioConMasDeudas} porque ahí están las deudas pendientes");
@@ -306,14 +306,14 @@ class OrdenPagoController extends Controller
             if ($totalPagado >= $deuda->monto_total) {
                 continue;
             }
-            
+
             $descripcion = $deuda->conceptoPago->descripcion ?? '';
             $partes = explode(' ', $descripcion);
-            
+
             if (count($partes) >= 2) {
                 $mesDeuda = $meses[$partes[0]] ?? 0;
                 $anioDeuda = intval($partes[1]);
-                
+
                 // Separar deudas anteriores vs actuales/futuras
                 if ($anioDeuda < $anioActual || ($anioDeuda == $anioActual && $mesDeuda < $mesActual)) {
                     $tieneDeudasAnteriores = true;
@@ -342,21 +342,21 @@ class OrdenPagoController extends Controller
         // Encontrar la primera deuda pendiente (la más próxima a pagar)
         $primeraDeudaPendiente = $deudas->first();
         $mesesMaximosAdelantar = 0;
-        
+
         if ($primeraDeudaPendiente && !$tieneDeudasAnteriores) {
             $descripcion = $primeraDeudaPendiente->conceptoPago->descripcion ?? '';
             $partes = explode(' ', $descripcion);
-            
+
             if (count($partes) >= 2) {
                 $mesesMap = [
                     'ENERO' => 1, 'FEBRERO' => 2, 'MARZO' => 3, 'ABRIL' => 4,
                     'MAYO' => 5, 'JUNIO' => 6, 'JULIO' => 7, 'AGOSTO' => 8,
                     'SETIEMBRE' => 9, 'OCTUBRE' => 10, 'NOVIEMBRE' => 11, 'DICIEMBRE' => 12
                 ];
-                
+
                 $mesDeuda = $mesesMap[$partes[0]] ?? 0;
                 $anioDeuda = intval($partes[1]);
-                
+
                 // Calcular meses disponibles desde el mes ACTUAL hasta diciembre
                 // Si estamos en Noviembre (11): 12 - 11 = 1 mes (Diciembre)
                 // Si estamos en Octubre (10): 12 - 10 = 2 meses (Nov y Dic)
@@ -378,9 +378,9 @@ class OrdenPagoController extends Controller
             'alumno' => [
                 'id_alumno' => $alumno->id_alumno,
                 'nombre_completo' => trim(
-                    ($alumno->primer_nombre ?? '') . ' ' . 
-                    ($alumno->otros_nombres ?? '') . ' ' . 
-                    ($alumno->apellido_paterno ?? '') . ' ' . 
+                    ($alumno->primer_nombre ?? '') . ' ' .
+                    ($alumno->otros_nombres ?? '') . ' ' .
+                    ($alumno->apellido_paterno ?? '') . ' ' .
                     ($alumno->apellido_materno ?? '')
                 ),
                 'dni' => $alumno->dni,
@@ -402,30 +402,30 @@ class OrdenPagoController extends Controller
                     'MAYO' => 5, 'JUNIO' => 6, 'JULIO' => 7, 'AGOSTO' => 8,
                     'SETIEMBRE' => 9, 'OCTUBRE' => 10, 'NOVIEMBRE' => 11, 'DICIEMBRE' => 12
                 ];
-                
+
                 $mesDeuda = count($partes) >= 2 ? ($mesesMap[$partes[0]] ?? 0) : 0;
                 $anioDeuda = count($partes) >= 2 ? intval($partes[1]) : 0;
-                
+
                 // Usar el valor calculado globalmente
                 $mesesDisponibles = $mesesMaximosAdelantar;
-                
+
                 $esDeudaAnterior = false;
                 if ($anioDeuda < $anioActual || ($anioDeuda == $anioActual && $mesDeuda < $mesActual)) {
                     $esDeudaAnterior = true;
                 }
-                
+
                 $porcentajeMora = 0;
                 $aplicaMora = false;
                 $tipoMora = '';
                 $descripcionPoliticaMora = '';
-                
+
                 if ($deuda->fecha_limite) {
                     $fechaLimite = Carbon::parse($deuda->fecha_limite);
                     $hoy = Carbon::now();
-                    
+
                     if ($hoy->gt($fechaLimite)) {
                         $aplicaMora = true;
-                        
+
                         if ($esDeudaAnterior) {
                             $politicaMora = $politicasMora->where('condiciones', 'like', '%Meses Anteriores%')->first();
                             $porcentajeMora = $politicaMora ? $politicaMora->porcentaje : 15.00;
@@ -433,7 +433,7 @@ class OrdenPagoController extends Controller
                             $tipoMora = 'anterior';
                         } else {
                             $diaActual = $hoy->day;
-                            
+
                             foreach ($politicasMora as $politica) {
                                 if ($politica->dias_minimo && $politica->dias_maximo) {
                                     if ($diaActual >= $politica->dias_minimo && $diaActual <= $politica->dias_maximo) {
@@ -447,14 +447,14 @@ class OrdenPagoController extends Controller
                         }
                     }
                 }
-                
+
                 return [
                     'id_deuda' => $deuda->id_deuda,
                     'concepto' => $descripcion,
                     'monto_total' => $deuda->monto_total,
                     'monto_a_cuenta' => $deuda->monto_a_cuenta,
                     'monto_pendiente' => $deuda->monto_total - $deuda->monto_a_cuenta,
-                    'fecha_limite' => $deuda->fecha_limite ? 
+                    'fecha_limite' => $deuda->fecha_limite ?
                         Carbon::parse($deuda->fecha_limite)->format('d/m/Y') : 'N/A',
                     'periodo' => $descripcion,
                     'mes' => $mesDeuda,
@@ -516,7 +516,7 @@ class OrdenPagoController extends Controller
             // Si la orden está vencida PERO tiene deuda pendiente, bloquear también
             if ($ordenVencida && $pagosRealizados > 0) {
                 $montoPendiente = $ordenExistente->monto_total - $pagosRealizados;
-                
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Este alumno tiene una orden de pago vencida (' . $ordenExistente->codigo_orden . ') con un saldo pendiente de S/ ' . number_format($montoPendiente, 2) . '. Debe completar el pago de esta orden antes de generar una nueva.',
@@ -530,12 +530,12 @@ class OrdenPagoController extends Controller
         // ============================================
 
         DB::beginTransaction();
-        
+
         try {
             $tieneDeudas = $request->has('deudas') && is_array($request->deudas) && count($request->deudas) > 0;
             $tieneMesesAdelantar = $request->meses_adelantar > 0;
             $tieneDeudasAnteriores = $request->input('tiene_deudas_anteriores', '0') === '1';
-            
+
             // Si tiene deudas anteriores, debe seleccionar al menos una deuda o adelantar meses
             // Si NO tiene deudas anteriores, puede generar orden para el mes actual sin seleccionar nada
             if ($tieneDeudasAnteriores && !$tieneDeudas && !$tieneMesesAdelantar) {
@@ -544,14 +544,14 @@ class OrdenPagoController extends Controller
                     'message' => 'Debe seleccionar al menos una deuda atrasada o indicar meses a adelantar.'
                 ], 400);
             }
-            
+
             $deudas = collect();
             if ($tieneDeudas) {
                 $deudas = Deuda::whereIn('id_deuda', $request->deudas)
                     ->where('estado', true)
                     ->where('monto_a_cuenta', 0)
                     ->get();
-                
+
                 if ($deudas->isEmpty()) {
                     return response()->json([
                         'success' => false,
@@ -576,18 +576,18 @@ class OrdenPagoController extends Controller
                         })
                         ->orderBy('id_deuda', 'asc')
                         ->first();
-                    
+
                     if (!$deudaMesActual) {
                         return response()->json([
                             'success' => false,
                             'message' => 'No se encontró ninguna deuda pendiente.'
                         ], 400);
                     }
-                    
+
                     $deudas = collect([$deudaMesActual]);
                 }
             }
-            
+
             // Validación final: debe tener al menos deudas seleccionadas O meses a adelantar
             if ($deudas->isEmpty() && !$tieneMesesAdelantar) {
                 return response()->json([
@@ -595,13 +595,13 @@ class OrdenPagoController extends Controller
                     'message' => 'Las deudas seleccionadas no son válidas o ya tienen pagos registrados.'
                 ], 400);
             }
-            
+
             $ultimaOrden = OrdenPago::orderBy('id_orden', 'desc')->first();
             $numero = $ultimaOrden ? ($ultimaOrden->id_orden + 1) : 1;
             $codigoOrden = 'OP-' . date('Y') . '-' . str_pad($numero, 4, '0', STR_PAD_LEFT);
 
             $montoTotalDeudas = $deudas->sum('monto_total');
-            
+
             $orden = OrdenPago::create([
                 'codigo_orden' => $codigoOrden,
                 'id_alumno' => $request->id_alumno,
@@ -621,11 +621,11 @@ class OrdenPagoController extends Controller
                 $montoMora = 0;
                 $porcentajeMora = 0;
                 $idPoliticaMora = null;
-                
+
                 if ($deuda->fecha_limite) {
                     $fechaLimite = Carbon::parse($deuda->fecha_limite);
                     $hoy = Carbon::now();
-                    
+
                     if ($hoy->gt($fechaLimite)) {
                         $descripcion = $deuda->conceptoPago->descripcion ?? '';
                         $partes = explode(' ', $descripcion);
@@ -634,13 +634,13 @@ class OrdenPagoController extends Controller
                             'MAYO' => 5, 'JUNIO' => 6, 'JULIO' => 7, 'AGOSTO' => 8,
                             'SETIEMBRE' => 9, 'OCTUBRE' => 10, 'NOVIEMBRE' => 11, 'DICIEMBRE' => 12
                         ];
-                        
+
                         if (count($partes) >= 2) {
                             $mesDeuda = $meses[$partes[0]] ?? 0;
                             $anioDeuda = intval($partes[1]);
                             $mesActual = $hoy->month;
                             $anioActual = $hoy->year;
-                            
+
                             if ($anioDeuda < $anioActual || ($anioDeuda == $anioActual && $mesDeuda < $mesActual)) {
                                 $politicaMoraAnterior = Politica::where('tipo', 'mora')
                                     ->where(function($query) {
@@ -650,7 +650,7 @@ class OrdenPagoController extends Controller
                                     })
                                     ->where('estado', true)
                                     ->first();
-                                
+
                                 if ($politicaMoraAnterior) {
                                     $porcentajeMora = $politicaMoraAnterior->porcentaje;
                                     $idPoliticaMora = $politicaMoraAnterior->id_politica;
@@ -658,12 +658,12 @@ class OrdenPagoController extends Controller
                                     $porcentajeMora = 15.00;
                                     $idPoliticaMora = null;
                                 }
-                                
+
                                 $montoMora = $deuda->monto_total * ($porcentajeMora / 100);
                             } else {
                                 $diaActual = $hoy->day;
                                 $politicasMora = Politica::where('tipo', 'mora')->where('estado', true)->get();
-                                
+
                                 foreach ($politicasMora as $politica) {
                                     if ($politica->dias_minimo && $politica->dias_maximo) {
                                         if ($diaActual >= $politica->dias_minimo && $diaActual <= $politica->dias_maximo) {
@@ -678,9 +678,9 @@ class OrdenPagoController extends Controller
                         }
                     }
                 }
-                
+
                 $montoSubtotal = $deuda->monto_total + $montoMora;
-                
+
                 DetalleOrdenPago::create([
                     'id_orden' => $orden->id_orden,
                     'id_deuda' => $deuda->id_deuda,
@@ -697,11 +697,11 @@ class OrdenPagoController extends Controller
 
                 $montoTotal += $montoSubtotal;
             }
-            
+
             if ($request->meses_adelantar > 0) {
                 $primeraDeuda = $deudas->first();
                 $montoMensual = $primeraDeuda ? $primeraDeuda->monto_total : 0;
-                
+
                 $deudasFuturas = Deuda::where('id_alumno', $request->id_alumno)
                     ->where('estado', true)
                     ->whereRaw('monto_a_cuenta < monto_total') // Solo deudas no pagadas completamente
@@ -712,14 +712,14 @@ class OrdenPagoController extends Controller
                     })
                     ->orderBy('id_deuda', 'asc')
                     ->get();
-                
+
                 $idsDeudaActual = $deudas->pluck('id_deuda')->toArray();
                 $deudasParaAdelantar = $deudasFuturas->filter(function($deuda) use ($idsDeudaActual) {
                     return !in_array($deuda->id_deuda, $idsDeudaActual);
                 });
-                
+
                 $deudasAdelantadas = $deudasParaAdelantar->take($request->meses_adelantar);
-                
+
                 if ($deudasAdelantadas->count() < $request->meses_adelantar) {
                     DB::rollBack();
                     return response()->json([
@@ -727,12 +727,12 @@ class OrdenPagoController extends Controller
                         'message' => 'No hay suficientes deudas futuras disponibles para adelantar ' . $request->meses_adelantar . ' mes(es). Solo hay ' . $deudasAdelantadas->count() . ' disponible(s).'
                     ], 400);
                 }
-                
+
                 foreach ($deudasAdelantadas as $deudaAdelantada) {
                     $montoBase = $deudaAdelantada->monto_total;
                     $montoDescuento = $montoBase * ($porcentajeDescuento / 100);
                     $montoConDescuento = $montoBase - $montoDescuento;
-                    
+
                     DetalleOrdenPago::create([
                         'id_orden' => $orden->id_orden,
                         'id_deuda' => $deudaAdelantada->id_deuda,
@@ -742,15 +742,15 @@ class OrdenPagoController extends Controller
                         'monto_ajuste' => -$montoDescuento,
                         'monto_subtotal' => $montoConDescuento,
                     ]);
-                    
+
                     $deudaAdelantada->update([
                         'monto_total' => $montoConDescuento
                     ]);
-                    
+
                     $montoTotal += $montoConDescuento;
                 }
             }
-            
+
             $orden->update(['monto_total' => $montoTotal]);
 
             DB::commit();
@@ -770,14 +770,14 @@ class OrdenPagoController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Error al crear orden de pago: ' . $e->getMessage()
                 ], 500);
             }
-            
+
             return back()
                 ->withInput()
                 ->with('abort', 'Error al crear orden de pago: ' . $e->getMessage());
@@ -796,17 +796,17 @@ class OrdenPagoController extends Controller
         ])->findOrFail($id);
 
         $html = view('gestiones.orden_pago.pdf', compact('orden'))->render();
-        
+
         $options = new Options();
         $options->set('isHtml5ParserEnabled', true);
         $options->set('isRemoteEnabled', true);
         $options->set('defaultFont', 'Arial');
-        
+
         $dompdf = new Dompdf($options);
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
-        
+
         return response($dompdf->output(), 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="orden-pago-' . $orden->codigo_orden . '.pdf"'
@@ -816,7 +816,7 @@ class OrdenPagoController extends Controller
     public function anular($id)
     {
         $orden = OrdenPago::findOrFail($id);
-        
+
         if ($orden->estado === 'pagado') {
             return back()->with('abort', 'No se puede anular una orden ya pagada');
         }
@@ -829,13 +829,13 @@ class OrdenPagoController extends Controller
     public function delete(Request $request)
     {
         $ids = $request->input('ids', []);
-        
+
         DB::beginTransaction();
-        
+
         try {
             OrdenPago::whereIn('id_orden', $ids)->delete();
             DB::commit();
-            
+
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -869,8 +869,8 @@ class OrdenPagoController extends Controller
                 ]);
             }
 
-            // IMPORTANTE: Buscar desde MATRÍCULAS activas para obtener todos los alumnos matriculados
-            $query = DB::table('matriculas')
+            // IMPORTANTE: Buscar desde ALUMNOS y hacer LEFT JOIN con matrículas para incluir alumnos sin matrícula
+            $query = DB::table('alumnos')
                 ->select(
                     'alumnos.id_alumno',
                     'alumnos.codigo_educando',
@@ -888,10 +888,12 @@ class OrdenPagoController extends Controller
                     'matriculas.nombreSeccion',
                     'niveles_educativos.nombre_nivel'
                 )
-                ->join('alumnos', 'matriculas.id_alumno', '=', 'alumnos.id_alumno')
-                ->join('grados', 'matriculas.id_grado', '=', 'grados.id_grado')
-                ->join('niveles_educativos', 'grados.id_nivel', '=', 'niveles_educativos.id_nivel')
-                ->where('matriculas.estado', true) // Solo matrículas activas
+                ->leftJoin('matriculas', function($join) {
+                    $join->on('alumnos.id_alumno', '=', 'matriculas.id_alumno')
+                         ->where('matriculas.estado', '=', true);
+                })
+                ->leftJoin('grados', 'matriculas.id_grado', '=', 'grados.id_grado')
+                ->leftJoin('niveles_educativos', 'grados.id_nivel', '=', 'niveles_educativos.id_nivel')
                 ->where('alumnos.estado', '1');    // Solo alumnos activos
 
             // Aplicar búsqueda por nombre, DNI o código
