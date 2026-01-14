@@ -392,7 +392,7 @@ class GradoController extends Controller
         $aniosDisponibles = DB::table('cursos_grados')
             ->select('año_escolar')
             ->distinct()
-            ->orderBy('año_escolar', 'desc')
+            ->orderBy('id_periodo_academico', 'desc')
             ->pluck('año_escolar');
 
         return view('gestiones.grado.view_details', compact(

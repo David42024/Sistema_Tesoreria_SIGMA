@@ -68,6 +68,11 @@ class FamiliarDatosController extends Controller
         $provincias = $ubigeo['provincias'];
         $distritos = $ubigeo['distritos'];
 
+        // Buscar las descripciones del ubigeo
+        $departamentoDesc = collect($departamentos)->firstWhere('id_departamento', $requested->departamento)['descripcion'] ?? $requested->departamento;
+        $provinciaDesc = collect($provincias)->firstWhere('id_provincia', $requested->provincia)['descripcion'] ?? $requested->provincia;
+        $distritoDesc = collect($distritos)->firstWhere('id_distrito', $requested->distrito)['descripcion'] ?? $requested->distrito;
+
         $data = [
             'return' => route('principal'),
             'id' => $requested->getKey(),
@@ -92,9 +97,9 @@ class FamiliarDatosController extends Controller
                 'sexo' => $requested->sexo,
                 'fecha_nacimiento' => $requested->fecha_nacimiento,
                 'pais' => $requested->pais,
-                'departamento' => $requested->departamento,
-                'provincia' => $requested->provincia,
-                'distrito' => $requested->distrito,
+                'departamento' => $departamentoDesc,
+                'provincia' => $provinciaDesc,
+                'distrito' => $distritoDesc,
                 'lengua_materna' => $requested->lengua_materna,
                 'estado_civil' => $requested->estado_civil,
                 'religion' => $requested->religion,

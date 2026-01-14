@@ -163,14 +163,28 @@
                                 </svg>
                                 Año Escolar
                             </label>
-                            <input type="text" 
-                                value="{{ date('Y') }}" 
-                                readonly
-                                class="w-40 h-[46px] rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-4 text-sm text-gray-800 dark:text-white/90 font-medium text-center">
-                            <input type="hidden" 
-                                name="año_escolar" 
-                                id="año_escolar" 
-                                value="{{ date('Y') }}">
+                            @php
+                                $field = 'id_periodo_academico';
+                                $label = 'Año Escolar';
+                                $required = true;
+                                $defaultValue = old('id_periodo_academico');
+                                $options = $data['periodosAcademicos'] ?? [];
+                                $idAttribute = 'id';
+                                $textAttribute = 'descripcion';
+                                $errorMessage = $errors->first('id_periodo_academico');
+                            @endphp
+                            @component('components.combo', [
+                                'field' => $field,
+                                'label' => '',
+                                'required' => $required,
+                                'defaultValue' => $defaultValue,
+                                'options' => $options,
+                                'idAttribute' => $idAttribute,
+                                'textAttribute' => $textAttribute,
+                                'errorMessage' => $errorMessage,
+                                'readonly' => false
+                            ])
+                            @endcomponent
                         </div>
                     </div>
                 </div>

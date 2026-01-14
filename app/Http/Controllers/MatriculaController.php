@@ -49,7 +49,6 @@ class MatriculaController extends Controller
             $query->where(function ($q) use ($search) {
                 // Buscar en columnas propias
                 $q->where('id_matricula', 'LIKE', "%{$search}%")
-                    ->orWhere('año_escolar', 'LIKE', "%{$search}%")
                     ->orWhere('escala', 'LIKE', "%{$search}%")
                     ->orWhere('observaciones', 'LIKE', "%{$search}%");
 
@@ -83,7 +82,7 @@ class MatriculaController extends Controller
             $columnMap = [
                 'ID' => 'id_matricula',
                 'Fecha de matricula' => 'fecha_matricula',
-                'Año Escolar' => 'año_escolar',
+                'Año Escolar' => 'id_periodo_academico',
                 'Alumno' => 'alumno',
                 'Grado' => 'grado',
                 'Seccion' => 'nombreSeccion',
@@ -136,7 +135,7 @@ class MatriculaController extends Controller
     }
     public function index(Request $request, bool $long = false)
     {
-        $sqlColumns = ["id_matricula", "fecha_matricula", "año_escolar", "id_alumno", "id_grado", "nombreSeccion", "escala", "observaciones",];
+        $sqlColumns = ["id_matricula", "fecha_matricula", "id_periodo_academico", "id_alumno", "id_grado", "nombreSeccion", "escala", "observaciones",];
         $resource = "alumnos";
 
         $params = RequestHelper::extractSearchParams($request);
@@ -248,7 +247,7 @@ class MatriculaController extends Controller
                 [
                     $itemmatricula->id_matricula,
                     Carbon::parse($itemmatricula->fecha_matricula)->format('d/m/Y'),
-                    $itemmatricula->año_escolar,
+                    $itemmatricula->periodoAcademico->nombre ?? 'N/A',
                     $itemmatricula->alumno->apellido_paterno . ' ' . $itemmatricula->alumno->apellido_materno . ' ' . $itemmatricula->alumno->primer_nombre . ' ' . $itemmatricula->alumno->otros_nombres,
                     $itemmatricula->grado->nivelEducativo->nombre_nivel,
                     $itemmatricula->grado->nombre_grado,
@@ -304,10 +303,15 @@ class MatriculaController extends Controller
             ];
         })->values()->toArray();
 
-        $añosEscolares = [
-            ['id' => '2025', 'descripcion' => '2025'],
-            ['id' => '2026', 'descripcion' => '2026']
-        ];
+        $periodosAcademicos = \App\Models\PeriodoAcademico::where('estado', 1)
+            ->select('id_periodo_academico', 'nombre')
+            ->get()
+            ->map(function($periodo) {
+                return [
+                    'id' => $periodo->id_periodo_academico,
+                    'descripcion' => $periodo->nombre
+                ];
+            });
 
         $niveles = NivelEducativo::where("estado", "=", "1")
             ->select('id_nivel', 'nombre_nivel')
@@ -335,7 +339,7 @@ class MatriculaController extends Controller
         $data = [
             'return' => route('matricula_view', ['abort' => true]),
             'alumnos' => $resultado_alumnos,
-            'añosEscolares' => $añosEscolares,
+            'periodosAcademicos' => $periodosAcademicos,
             'escalas' => $escalas,
             'grados' => $grados,
             'secciones' => $secciones,
@@ -358,7 +362,7 @@ class MatriculaController extends Controller
                 'required',
                 $this->validarAlumnoYaMatriculado($request),
             ],
-            'año_escolar' => 'required',
+            'id_periodo_academico' => 'required|exists:periodos_academicos,id_periodo_academico',
             'nivel_educativo' => 'required',
             'grado' => 'required',
             'seccion' => [
@@ -367,7 +371,7 @@ class MatriculaController extends Controller
             ],
         ], [
             'alumno.required' => 'El alumno es obligatorio.',
-            'año_escolar.required' => 'El año escolar es obligatorio.',
+            'id_periodo_academico.required' => 'El periodo académico es obligatorio.',
             'nivel_educativo.required' => 'El nivel educativo es obligatorio.',
             'grado.required' => 'El grado es obligatorio.',
             'seccion.required' => 'La sección es obligatoria.',
@@ -375,7 +379,7 @@ class MatriculaController extends Controller
 
         $matricula = Matricula::create([
             'id_alumno' => $request->alumno,
-            'año_escolar' => $request->año_escolar,
+            'id_periodo_academico' => $request->id_periodo_academico,
             'fecha_matricula' => Carbon::now(),
             'id_grado' => $seccionData['id_grado'],
             'nombreSeccion' => $seccionData['nombreSeccion'],
@@ -392,11 +396,11 @@ class MatriculaController extends Controller
     {
         return function ($attribute, $value, $fail) use ($request) {
             $exists = Matricula::where('id_alumno', $value)
-                ->where('año_escolar', $request->año_escolar)
+                ->where('id_periodo_academico', $request->id_periodo_academico)
                 ->exists();
 
             if ($exists) {
-                $fail('Este alumno ya está matriculado en el año escolar seleccionado.');
+                $fail('Este alumno ya está matriculado en el periodo académico seleccionado.');
             }
         };
     }
@@ -405,7 +409,7 @@ class MatriculaController extends Controller
     {
         return function ($attribute, $value, $fail) use ($request, $seccionData) {
             $exists = Matricula::where('id_alumno', $request->alumno)
-                ->where('año_escolar', $request->año_escolar)
+                ->where('id_periodo_academico', $request->id_periodo_academico)
                 ->where('id_grado', $seccionData['id_grado'])
                 ->where('nombreSeccion', $seccionData['nombreSeccion'])
                 ->exists();
@@ -426,7 +430,7 @@ class MatriculaController extends Controller
         $matricula = Matricula::findOrFail($id);
 
         $alumno = $matricula->alumno;
-        $año = $matricula->año_escolar;
+        $id_periodo_academico = $matricula->id_periodo_academico;
 
         $grado = $matricula->grado;
         $id_grado = $matricula->seccion->id_grado;
@@ -449,10 +453,15 @@ class MatriculaController extends Controller
             ];
         })->values()->toArray();
 
-        $añosEscolares = [
-            ['id' => '2025', 'descripcion' => '2025'],
-            ['id' => '2026', 'descripcion' => '2026']
-        ];
+        $periodosAcademicos = \App\Models\PeriodoAcademico::where('estado', 1)
+            ->select('id_periodo_academico', 'nombre')
+            ->get()
+            ->map(function($periodo) {
+                return [
+                    'id' => $periodo->id_periodo_academico,
+                    'descripcion' => $periodo->nombre
+                ];
+            })->toArray();
 
         $niveles = NivelEducativo::where("estado", "=", "1")
             ->select('id_nivel', 'nombre_nivel')
@@ -475,13 +484,13 @@ class MatriculaController extends Controller
             'return' => route('grado_view', ['abort' => true]),
             'id' => $id,
             'alumnos' => $resultado_alumnos,
-            'añosEscolares' => $añosEscolares,
+            'periodosAcademicos' => $periodosAcademicos,
             'grados' => $grados,
             'secciones' => $secciones,
             'niveles' => $niveles,
             'default' => [
                 'alumno' => $alumno->id_alumno,
-                'año_escolar' => $año,
+                'id_periodo_academico' => $id_periodo_academico,
                 'nivel_educativo' => $nivel_educativo->id_nivel,
                 'grado' => $grado->id_grado,
                 'seccion' => $seccion,
@@ -504,37 +513,37 @@ class MatriculaController extends Controller
 
         $request->validate([
             'alumno' => 'required',
-            'año_escolar' => 'required',
+            'id_periodo_academico' => 'required|exists:periodos_academicos,id_periodo_academico',
             'nivel_educativo' => 'required',
             'grado' => 'required',
             'seccion' => [
                 'required',
                 function ($attribute, $value, $fail) use ($request, $seccionData) {
                     $exists = Matricula::where('id_alumno', $request->alumno)
-                        ->where('año_escolar', $request->año_escolar)
+                        ->where('id_periodo_academico', $request->id_periodo_academico)
                         ->where('id_grado', $seccionData['id_grado'])
                         ->where('nombreSeccion', $seccionData['nombreSeccion'])
                         ->exists();
 
                     if ($exists) {
-                        $fail('Esta combinación de alumno, año escolar y sección ya existe.');
+                        $fail('Esta combinación de alumno, periodo académico y sección ya existe.');
                     }
                 },
             ],
         ], [
             'alumno.required' => 'El alumno es obligatorio.',
-            'año_escolar.required' => 'El año escolar es obligatorio.',
+            'id_periodo_academico.required' => 'El periodo académico es obligatorio.',
             'nivel_educativo.required' => 'El nivel educativo es obligatorio.',
             'grado.required' => 'El grado es obligatorio.',
             'seccion.required' => 'La sección es obligatoria.',
-            'seccion.unique' => 'Esta combinación de docente, curso, año escolar y sección ya existe.',
+            'seccion.unique' => 'Esta combinación de docente, curso, periodo académico y sección ya existe.',
         ]);
 
         $matricula = Matricula::findOrFail($id);
 
 
         $matricula->id_alumno = $request->input('alumno');
-        $matricula->año_escolar = $request->input('año_escolar');
+        $matricula->id_periodo_academico = $request->input('id_periodo_academico');
         $matricula->fecha_matricula = $request->input('fecha_matricula');
         $matricula->escala = $request->input('escala');
         $matricula->observaciones = $request->input('observaciones');
@@ -620,7 +629,7 @@ class MatriculaController extends Controller
 
     public function export(Request $request, IExportRequestFactory $requestFactory, IExporterService $exporterService)
     {
-        $sqlColumns = ["id_matricula", "fecha_matricula", "año_escolar", "id_alumno", "id_grado", "nombreSeccion", "escala", "observaciones",];
+        $sqlColumns = ["id_matricula", "fecha_matricula", "id_periodo_academico", "id_alumno", "id_grado", "nombreSeccion", "escala", "observaciones",];
 
         $params = RequestHelper::extractSearchParams($request);
 
@@ -632,7 +641,7 @@ class MatriculaController extends Controller
             $seccion = $matricula->seccion;
 
             return [
-                $matricula->año_escolar,
+                $matricula->periodoAcademico->nombre ?? 'N/A',
                 $grado->nombre_grado,
                 $seccion->nombreSeccion,
                 $alumno->apellido_paterno . " " . $alumno->apellido_materno,

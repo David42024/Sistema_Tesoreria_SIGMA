@@ -14,16 +14,21 @@ return new class extends Migration
         Schema::create('matriculas', function (Blueprint $table) {
             $table->increments('id_matricula');
             $table->unsignedInteger('id_alumno');
-            $table->year('año_escolar');
+            $table->unsignedInteger('id_periodo_academico');
             $table->date('fecha_matricula');
             $table->string('escala', 5)->nullable();
             $table->text('observaciones')->nullable();
             $table->unsignedInteger('id_grado');
             $table->char('nombreSeccion', 2);
+            $table->string('tipo', 20)->default('regular');
             $table->foreign('id_alumno')
                   ->references('id_alumno')
                   ->on('alumnos')
                   ->onDelete('cascade');
+            $table->foreign('id_periodo_academico')
+                  ->references('id_periodo_academico')
+                  ->on('periodos_academicos')
+                  ->onDelete('restrict');
             $table->foreign(['id_grado', 'nombreSeccion'])
                   ->references(['id_grado', 'nombreSeccion']) 
                   ->on('secciones')                          

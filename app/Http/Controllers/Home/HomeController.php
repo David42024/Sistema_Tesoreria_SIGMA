@@ -30,6 +30,11 @@ use Illuminate\Support\Facades\Auth;
 
 class HomeController extends Controller {
     public static function index(Request $request){
+        // Si se solicita limpiar sesión, hacerlo
+        if ($request->has('limpiar_sesion')) {
+            $request->session()->forget('alumno');
+        }
+        
         return static::familiarIndex($request);
     }
 

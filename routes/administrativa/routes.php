@@ -39,3 +39,11 @@ Route::group([
 ], function(){
     require __DIR__ . '/validacion_pago.php';
 });
+
+Route::group([
+    'prefix' => 'solicitudes-prematricula',
+    'as' => 'solicitudes_prematricula.',
+    'middleware' => ['can:access-resource,"administrativa"'],
+], function(){
+    require __DIR__ . '/solicitudes_prematricula.php';
+});

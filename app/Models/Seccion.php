@@ -16,6 +16,7 @@ class Seccion extends Model
     protected $fillable = [
         'id_grado',
         'nombreSeccion',
+        'capacidad_maxima',
         'estado'
     ];
 
@@ -46,11 +47,41 @@ class Seccion extends Model
         return $this->hasMany(Catedra::class, 'id_grado', 'id_grado')
                     ->where('secciones_nombreSeccion', $this->nombreSeccion);
     }
+    
     public static function findByCompositeKeyOrFail($idGrado, $nombreSeccion)
     {
         return self::where('id_grado', $idGrado)
                   ->where('nombreSeccion', $nombreSeccion)
                   ->firstOrFail();
+    }
+
+    /**
+     * Obtener el número de alumnos matriculados en esta sección para un periodo específico
+     */
+    public function getAlumnosMatriculadosCount($idPeriodoAcademico)
+    {
+        return Matricula::where('id_grado', $this->id_grado)
+                        ->where('nombreSeccion', $this->nombreSeccion)
+                        ->where('id_periodo_academico', $idPeriodoAcademico)
+                        ->where('estado', 1)
+                        ->count();
+    }
+
+    /**
+     * Obtener las vacantes disponibles para un periodo específico
+     */
+    public function getVacantesDisponibles($idPeriodoAcademico)
+    {
+        $matriculados = $this->getAlumnosMatriculadosCount($idPeriodoAcademico);
+        return $this->capacidad_maxima - $matriculados;
+    }
+
+    /**
+     * Verificar si la sección tiene vacantes disponibles
+     */
+    public function tieneVacantes($idPeriodoAcademico)
+    {
+        return $this->getVacantesDisponibles($idPeriodoAcademico) > 0;
     }
 
     //public function alumnos()

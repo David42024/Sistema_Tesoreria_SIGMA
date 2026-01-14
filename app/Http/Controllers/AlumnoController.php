@@ -1177,7 +1177,7 @@ class AlumnoController extends Controller
         $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
 
         $data = $query->map(function ($alumno) {
-            $ultimaMatricula = $alumno->matriculas()->where('estado', 1)->orderBy('año_escolar', 'desc')->first();
+            $ultimaMatricula = $alumno->matriculas()->where('estado', 1)->orderBy('id_periodo_academico', 'desc')->first();
 
             $añoEscolar = $ultimaMatricula ? $ultimaMatricula->año_escolar : 'N/A';
             $grado = $ultimaMatricula && $ultimaMatricula->grado ? $ultimaMatricula->grado->nombre_grado : 'N/A';

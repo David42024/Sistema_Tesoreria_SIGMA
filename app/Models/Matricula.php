@@ -16,7 +16,6 @@ class Matricula extends Model
     protected $keyType = 'int';
     protected $fillable = [
         'id_alumno',
-        'año_escolar',
         'fecha_matricula',
         'escala',
         'observaciones',
@@ -50,7 +49,6 @@ class Matricula extends Model
     protected function casts(): array
     {
         return [
-            'año_escolar' => 'integer',   
             'fecha_matricula' => 'date',    
             'estado' => 'boolean',          
         ];
@@ -64,7 +62,8 @@ class Matricula extends Model
             9 => 'SETIEMBRE', 10 => 'OCTUBRE', 11 => 'NOVIEMBRE', 12 => 'DICIEMBRE'
         ];
 
-        $anioEscolar = $this->año_escolar;
+        // Obtener el año del periodo académico
+        $anioEscolar = $this->periodoAcademico ? (int)$this->periodoAcademico->nombre : Carbon::now()->year;
         $escala = $this->escala;
         $idAlumno = $this->id_alumno;
 

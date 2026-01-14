@@ -9,7 +9,21 @@ use App\Models\Alumno;
 use App\Models\Familiar;
 use App\Models\Matricula;
 use App\Models\Seccion;
+use App\Models\PeriodoAcademico;
 use App\Helpers\PreMatricula\PromocionHelper;
+use App\Helpers\CRUDTablePage;
+use App\Helpers\RequestHelper;
+use App\Helpers\TableAction;
+use App\Helpers\Tables\AdministrativoHeaderComponent;
+use App\Helpers\Tables\AdministrativoSidebarComponent;
+use App\Helpers\Tables\CRUDTableComponent;
+use App\Helpers\Tables\FilterConfig;
+use App\Helpers\Tables\PaginatorRowsSelectorComponent;
+use App\Helpers\Tables\SearchBoxComponent;
+use App\Helpers\Tables\TableButtonComponent;
+use App\Helpers\Tables\TableComponent;
+use App\Helpers\Tables\TablePaginator;
+use App\Helpers\FilteredSearchQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +31,221 @@ use Illuminate\Support\Facades\Storage;
 
 class SolicitudPrematriculaController extends Controller
 {
+    private static function doSearch($sqlColumns, $search, $maxEntriesShow, $appliedFilters = [])
+    {
+        $columnMap = [
+            'ID' => 'id_solicitud',
+            'DNI Alumno' => 'dni_alumno',
+            'Nombre Alumno' => 'primer_nombre_alumno',
+            'Apellido Paterno' => 'apellido_paterno_alumno',
+            'DNI Apoderado' => 'dni_apoderado',
+            'Estado' => 'estado',
+        ];
+
+        $query = SolicitudPrematricula::with(['grado.nivelEducativo']);
+
+        FilteredSearchQuery::fromQuery($query, $sqlColumns, $search, $appliedFilters, $columnMap);
+        
+        $query->orderBy('created_at', 'desc');
+
+        if ($maxEntriesShow === null) {
+            return $query->get();
+        } else {
+            return $query->paginate($maxEntriesShow);
+        }
+    }
+
+    public function index(Request $request, $long = false)
+    {
+        $sqlColumns = ['id_solicitud', 'dni_alumno', 'primer_nombre_alumno', 'apellido_paterno_alumno', 'apellido_materno_alumno', 'dni_apoderado', 'estado'];
+        $resource = 'solicitudes_prematricula';
+
+        $params = RequestHelper::extractSearchParams($request);
+
+        $page = CRUDTablePage::new()
+            ->title("Solicitudes de Prematrícula")
+            ->sidebar(new AdministrativoSidebarComponent())
+            ->header(new AdministrativoHeaderComponent());
+
+        $content = CRUDTableComponent::new()
+            ->title("Solicitudes de Prematrícula");
+
+        $filterButton = new TableButtonComponent("tablesv2.buttons.filtros");
+        $content->addButton($filterButton);
+
+        /* Definición de botones */
+        $descargaButton = new TableButtonComponent("tablesv2.buttons.download");
+        
+        if (!$long) {
+            $vermasButton = new TableButtonComponent("tablesv2.buttons.vermas", ["redirect" => "solicitudes_prematricula.index_all"]);
+        } else {
+            $vermasButton = new TableButtonComponent("tablesv2.buttons.vermenos", ["redirect" => "solicitudes_prematricula.index"]);
+            $params->showing = 100;
+        }
+
+        $content->addButton($vermasButton);
+        $content->addButton($descargaButton);
+
+        /* Paginador */
+        $paginatorRowsSelector = new PaginatorRowsSelectorComponent();
+        if ($long)
+            $paginatorRowsSelector = new PaginatorRowsSelectorComponent([100]);
+        $paginatorRowsSelector->valueSelected = $params->showing;
+        $content->paginatorRowsSelector($paginatorRowsSelector);
+
+        /* Searchbox */
+        $searchBox = new SearchBoxComponent();
+        $searchBox->placeholder = "Buscar por DNI, nombre...";
+        $searchBox->value = $params->search;
+        $content->searchBox($searchBox);
+
+        /* Lógica del controller */
+        $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
+
+        if ($params->page > $query->lastPage()) {
+            $params->page = 1;
+            $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
+        }
+
+        $filterConfig = new FilterConfig();
+        $filterConfig->filters = [
+            "ID",
+            "DNI Alumno",
+            "Nombre Alumno",
+            "Apellido Paterno",
+            "DNI Apoderado",
+            "Estado"
+        ];
+        $filterConfig->filterOptions = [
+            "Estado" => ["Pendiente", "En_revision", "Aprobada", "Rechazada"]
+        ];
+        $content->filterConfig = $filterConfig;
+
+        $table = new TableComponent();
+        $table->columns = ["ID", "Alumno", "DNI", "Nivel", "Grado", "Sección", "Apoderado", "Estado", "Fecha"];
+        $table->rows = [];
+
+        foreach ($query as $solicitud) {
+            $estadoBadge = match($solicitud->estado) {
+                'pendiente' => 'Pendiente',
+                'en_revision' => 'En Revisión',
+                'aprobado' => 'Aprobado',
+                'rechazado' => 'Rechazado',
+                default => 'Desconocido',
+            };
+            
+            $estadoClass = match($solicitud->estado) {
+                'pendiente' => 'estado-pendiente',
+                'en_revision' => 'estado-revision',
+                'aprobado' => 'estado-aprobado',
+                'rechazado' => 'estado-rechazado',
+                default => 'estado-desconocido',
+            };
+
+            array_push(
+                $table->rows,
+                [
+                    $solicitud->id_solicitud,                                      // ID
+                    $solicitud->nombre_completo_alumno,                            // Alumno
+                    $solicitud->dni_alumno,                                        // DNI
+                    $solicitud->grado->nivelEducativo->nombre_nivel ?? 'N/A',     // Nivel
+                    $solicitud->grado->nombre_grado ?? 'N/A',                     // Grado
+                    $solicitud->nombreSeccion ?? 'Sin asignar',                   // Sección
+                    $solicitud->nombre_completo_apoderado,                        // Apoderado
+                    $estadoBadge,                                                  // Estado
+                    $solicitud->created_at->format('d/m/Y'),                      // Fecha
+                ]
+            );
+        }
+
+        $table->actions = [
+            new TableAction('view', 'solicitudes_prematricula.show', $resource),
+        ];
+
+        $paginator = new TablePaginator($params->page, $query->lastPage(), [
+            'search' => $params->search,
+            'showing' => $params->showing,
+            'applied_filters' => $params->applied_filters
+        ]);
+        $table->paginator = $paginator;
+
+        $content->tableComponent($table);
+
+        $data = [
+            'titulo' => 'Solicitudes de Prematrícula',
+            'contenido' => $content->build()->render(),
+        ];
+
+        return view('gestiones.solicitudes_prematricula.index', compact('data'));
+    }
+    
+    // Ver más
+    public function indexAll(Request $request)
+    {
+        return static::index($request, true);
+    }
+    
+    /**
+     * Muestra detalle de una solicitud
+     */
+    public function show($id)
+    {
+        $solicitud = SolicitudPrematricula::with(['grado.nivelEducativo', 'seccion'])->findOrFail($id);
+        
+        // Obtener periodos académicos activos
+        $periodosAcademicos = PeriodoAcademico::where('estado', 1)
+            ->orderBy('nombre', 'desc')
+            ->get();
+        
+        // Obtener periodo académico actual (el más reciente activo)
+        $periodoActual = $periodosAcademicos->first();
+        
+        // Calcular vacantes de la sección solicitada
+        $seccionSolicitada = null;
+        if ($solicitud->nombreSeccion && $periodoActual) {
+            // Buscar la sección solicitada usando id_grado y nombreSeccion
+            $seccion = Seccion::where('id_grado', $solicitud->id_grado)
+                              ->where('nombreSeccion', $solicitud->nombreSeccion)
+                              ->where('estado', 1)
+                              ->first();
+            
+            if ($seccion) {
+                $seccionSolicitada = [
+                    'matriculados' => $seccion->getAlumnosMatriculadosCount($periodoActual->id_periodo_academico),
+                    'capacidad' => $seccion->capacidad_maxima,
+                    'vacantes' => $seccion->getVacantesDisponibles($periodoActual->id_periodo_academico),
+                    'tiene_espacio' => $seccion->tieneVacantes($periodoActual->id_periodo_academico),
+                ];
+            }
+        }
+        
+        // Obtener secciones disponibles con información de vacantes
+        $seccionesDisponibles = Seccion::where('id_grado', $solicitud->id_grado)
+            ->where('estado', 1)
+            ->get()
+            ->map(function ($seccion) use ($periodoActual) {
+                if ($periodoActual) {
+                    $seccion->vacantes = $seccion->getVacantesDisponibles($periodoActual->id_periodo_academico);
+                    $seccion->matriculados = $seccion->getAlumnosMatriculadosCount($periodoActual->id_periodo_academico);
+                } else {
+                    $seccion->vacantes = $seccion->capacidad_maxima;
+                    $seccion->matriculados = 0;
+                }
+                return $seccion;
+            });
+        
+        $data = [
+            'titulo' => 'Detalle de Solicitud #' . $solicitud->id_solicitud,
+            'solicitud' => $solicitud,
+            'periodos' => $periodosAcademicos,
+            'secciones' => $seccionesDisponibles,
+            'periodo_actual' => $periodoActual,
+            'seccion_solicitada_info' => $seccionSolicitada,
+        ];
+        
+        return view('gestiones.solicitudes_prematricula.show', compact('data'));
+    }
+    
     /**
      * Formulario público de solicitud (desde login, sin autenticación)
      */
@@ -72,6 +301,7 @@ class SolicitudPrematriculaController extends Controller
             'telefono_alumno' => 'nullable|string|max:20',
             'colegio_procedencia' => 'nullable|string|max:100',
             'id_grado' => 'required|exists:grados,id_grado',
+            'escala' => 'required|in:A,B,C,D,E',
             
             // Documentos
             'partida_nacimiento' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
@@ -146,6 +376,7 @@ class SolicitudPrematriculaController extends Controller
                 'telefono_alumno' => $request->telefono_alumno,
                 'colegio_procedencia' => $request->colegio_procedencia,
                 'id_grado' => $request->id_grado,
+                'escala' => $request->escala,
                 // Documentos
                 'partida_nacimiento' => $rutaPartida,
                 'certificado_estudios' => $rutaCertificado,
@@ -351,14 +582,30 @@ class SolicitudPrematriculaController extends Controller
     {
         $solicitud = SolicitudPrematricula::findOrFail($id);
 
-        if ($solicitud->estado === 'aprobada') {
+        if ($solicitud->estado === 'aprobado') {
             return back()->withErrors(['error' => 'Esta solicitud ya fue aprobada.']);
         }
 
         $request->validate([
-            'nombreSeccion' => 'required|string|max:10',
-            'escala' => 'required|in:A,B,C,D,E',
+            'id_periodo_academico' => 'required|exists:periodos_academicos,id_periodo_academico',
+            'nombreSeccion' => 'required|string',
+            'observaciones' => 'nullable|string|max:500',
         ]);
+
+        // Obtener la sección seleccionada por nombre y grado
+        $seccion = Seccion::where('id_grado', $solicitud->id_grado)
+                          ->where('nombreSeccion', $request->nombreSeccion)
+                          ->where('estado', 1)
+                          ->first();
+        
+        if (!$seccion) {
+            return back()->withErrors(['error' => 'La sección seleccionada no es válida para el grado del estudiante.']);
+        }
+        
+        // Verificar vacantes disponibles
+        if (!$seccion->tieneVacantes($request->id_periodo_academico)) {
+            return back()->withErrors(['error' => 'Por favor seleccione otra sección con vacantes disponibles.']);
+        }
 
         DB::beginTransaction();
 
@@ -377,67 +624,56 @@ class SolicitudPrematriculaController extends Controller
                 ]
             );
 
-            // 2. Crear el Alumno
-            $alumno = Alumno::create([
-                'dni' => $solicitud->dni_alumno,
-                'apellido_paterno' => $solicitud->apellido_paterno_alumno,
-                'apellido_materno' => $solicitud->apellido_materno_alumno,
-                'primer_nombre' => $solicitud->primer_nombre_alumno,
-                'otros_nombres' => $solicitud->otros_nombres_alumno,
-                'sexo' => $solicitud->sexo,
-                'fecha_nacimiento' => $solicitud->fecha_nacimiento,
-                'direccion' => $solicitud->direccion_alumno,
-                'telefono' => $solicitud->telefono_alumno,
-                'colegio_procedencia' => $solicitud->colegio_procedencia,
-                'foto' => $solicitud->foto_alumno,
-                'escala' => $request->escala,
-                'año_ingreso' => date('Y'),
-                'estado' => true,
-            ]);
+            // 2. Crear o actualizar el Alumno
+            $alumno = Alumno::updateOrCreate(
+                ['dni' => $solicitud->dni_alumno],
+                [
+                    'apellido_paterno' => $solicitud->apellido_paterno_alumno,
+                    'apellido_materno' => $solicitud->apellido_materno_alumno,
+                    'primer_nombre' => $solicitud->primer_nombre_alumno,
+                    'otros_nombres' => $solicitud->otros_nombres_alumno,
+                    'sexo' => $solicitud->sexo,
+                    'fecha_nacimiento' => $solicitud->fecha_nacimiento,
+                    'direccion' => $solicitud->direccion_alumno ?? '',
+                    'colegio_procedencia' => $solicitud->colegio_procedencia,
+                    'escala' => 'A', // Escala por defecto
+                    'año_ingreso' => date('Y'),
+                    'estado' => true,
+                ]
+            );
 
-            // 3. Vincular Familiar con Alumno
-            if (!$familiar->alumnos()->where('id_alumno', $alumno->id_alumno)->exists()) {
+            // 3. Vincular Familiar con Alumno (si no existe ya la relación)
+            if (!$familiar->alumnos()->where('alumnos.id_alumno', $alumno->id_alumno)->exists()) {
                 $familiar->alumnos()->attach($alumno->id_alumno, [
                     'parentesco' => $solicitud->parentesco,
                 ]);
             }
 
-            // 4. Obtener período de prematrícula
-            $periodoPrematricula = PromocionHelper::obtenerPeriodoPrematricula();
-
-            // 5. Crear la Prematrícula
-            Matricula::create([
+            // 4. Crear la Matrícula en el periodo académico seleccionado
+            $matricula = Matricula::create([
                 'id_alumno' => $alumno->id_alumno,
                 'id_grado' => $solicitud->id_grado,
-                'nombreSeccion' => $request->nombreSeccion,
-                'año_escolar' => $periodoPrematricula['año_escolar'],
+                'nombreSeccion' => $seccion->nombreSeccion,
+                'id_periodo_academico' => $request->id_periodo_academico,
+                'escala' => $solicitud->escala,
                 'fecha_matricula' => now(),
-                'escala' => $request->escala,
                 'tipo' => 'prematricula',
-                'observaciones' => 'Prematrícula aprobada desde solicitud #' . $solicitud->id_solicitud,
-                'estado' => true,
+                'observaciones' => $request->observaciones ?? 'Prematrícula aprobada desde solicitud #' . $solicitud->id_solicitud,
+                'estado' => 1,
             ]);
 
-            // 6. Actualizar usuario a tipo Familiar
-            $usuario = User::find($solicitud->id_usuario);
-            if ($usuario) {
-                $usuario->update([
-                    'tipo' => 'Familiar',
-                    'idFamiliar' => $familiar->idFamiliar,
-                ]);
-            }
+            // 5. Generar deudas automáticamente para el estudiante
+            $matricula->generarDeudas();
 
-            // 7. Actualizar solicitud
+            // 6. Actualizar solicitud
             $solicitud->update([
-                'estado' => 'aprobada',
-                'revisado_por' => auth()->id(),
-                'fecha_revision' => now(),
+                'estado' => 'aprobado',
                 'observaciones' => $request->observaciones,
             ]);
 
             DB::commit();
 
-            return back()->with('success', 'Solicitud aprobada. El alumno ha sido registrado con prematrícula.');
+            return back()->with('success', 'Solicitud aprobada exitosamente. El alumno ha sido matriculado en la sección ' . $seccion->nombreSeccion . '.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -464,5 +700,23 @@ class SolicitudPrematriculaController extends Controller
         ]);
 
         return back()->with('success', 'Solicitud rechazada.');
+    }
+    
+    /**
+     * Marca una solicitud como "en revisión"
+     */
+    public function marcarEnRevision($id)
+    {
+        $solicitud = SolicitudPrematricula::findOrFail($id);
+        
+        if ($solicitud->estado === 'pendiente') {
+            $solicitud->update([
+                'estado' => 'en_revision',
+            ]);
+            
+            return back()->with('success', 'Solicitud marcada como "En Revisión".');
+        }
+        
+        return back()->with('error', 'Solo se pueden marcar como "En Revisión" las solicitudes pendientes.');
     }
 }

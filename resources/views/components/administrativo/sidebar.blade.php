@@ -59,6 +59,7 @@
             'items' => [
                 'Alumnos',
                 'Matrículas',
+                'Solicitudes de Prematrícula',
                 'Familiares',
                 'Asignar Familiar-Alumno',
                 'Generar Solicitud Traslado',
@@ -67,6 +68,7 @@
             'links' => [
                 'Alumnos' => 'alumno_view',
                 'Matrículas' => 'matricula_view',
+                'Solicitudes de Prematrícula' => 'solicitudes_prematricula.index',
                 'Familiares' => 'familiar_view',
                 'Asignar Familiar-Alumno' => 'composicion_familiar_view',
                 'Generar Solicitud Traslado' => 'traslado_view',

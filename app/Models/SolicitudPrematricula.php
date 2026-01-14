@@ -18,7 +18,6 @@ class SolicitudPrematricula extends Model
         'otros_nombres_apoderado',
         'numero_contacto',
         'correo_electronico',
-        'direccion_apoderado',
         'parentesco',
         // Alumno
         'dni_alumno',
@@ -29,25 +28,19 @@ class SolicitudPrematricula extends Model
         'sexo',
         'fecha_nacimiento',
         'direccion_alumno',
-        'telefono_alumno',
         'colegio_procedencia',
         'id_grado',
-        // Documentos
-        'partida_nacimiento',
-        'certificado_estudios',
+        'escala',
+        'nombreSeccion',
         'foto_alumno',
         // Estado
         'estado',
         'observaciones',
         'motivo_rechazo',
-        'id_usuario',
-        'revisado_por',
-        'fecha_revision',
     ];
 
     protected $casts = [
         'fecha_nacimiento' => 'date',
-        'fecha_revision' => 'datetime',
     ];
 
     public function grado()
@@ -55,9 +48,11 @@ class SolicitudPrematricula extends Model
         return $this->belongsTo(Grado::class, 'id_grado', 'id_grado');
     }
 
-    public function usuario()
+    public function seccion()
     {
-        return $this->belongsTo(User::class, 'id_usuario');
+        // Relación con clave compuesta (id_grado, nombreSeccion)
+        return $this->belongsTo(Seccion::class, 'nombreSeccion', 'nombreSeccion')
+                    ->where('secciones.id_grado', '=', $this->id_grado);
     }
 
     public function getNombreCompletoApoderadoAttribute()

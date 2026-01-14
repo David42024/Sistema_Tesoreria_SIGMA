@@ -681,6 +681,38 @@
             </li>
             <li>
               <a
+                href="javascript:void(0)"
+                onclick="event.preventDefault(); document.getElementById('volver-tarjetas-form').submit();"
+                class="group text-theme-sm flex items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+              >
+                <svg
+                  class="fill-gray-500 group-hover:fill-gray-700 dark:fill-gray-400 dark:group-hover:fill-gray-300"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    clip-rule="evenodd"
+                    d="M6 8C6 4.68629 8.68629 2 12 2C15.3137 2 18 4.68629 18 8C18 11.3137 15.3137 14 12 14C8.68629 14 6 11.3137 6 8ZM12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4ZM5 22C5 17.5817 8.58172 14 13 14H11C6.58172 14 3 17.5817 3 22C3 22.5523 3.44772 23 4 23H20C20.5523 23 21 22.5523 21 22C21 17.5817 17.4183 14 13 14C17.4183 14 21 17.5817 21 22C21 22.5523 20.5523 23 20 23H4C3.44772 23 3 22.5523 3 22Z"
+                    fill=""
+                  />
+                  <path
+                    d="M16 8C16 9.10457 15.1046 10 14 10C12.8954 10 12 9.10457 12 8C12 6.89543 12.8954 6 14 6C15.1046 6 16 6.89543 16 8Z"
+                    fill=""
+                  />
+                  <path
+                    d="M18 14C19.6569 14 21 15.3431 21 17V18C21 19.1046 20.1046 20 19 20H9C7.89543 20 7 19.1046 7 18V17C7 15.3431 8.34315 14 10 14H18Z"
+                    fill=""
+                  />
+                </svg>
+                Mis Alumnos
+              </a>
+            </li>
+            <li>
+              <a
                 href="messages.html"
                 class="group text-theme-sm flex items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
               >
@@ -728,6 +760,9 @@
           </ul>
 
           <form class="hidden" action="/logout" method="GET" id="logout"></form>
+          <form class="hidden" action="{{ route('principal') }}" method="GET" id="volver-tarjetas-form">
+            <input type="hidden" name="limpiar_sesion" value="1">
+          </form>
           <button type="submit" form="logout"
             class="group text-theme-sm mt-3 flex items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
           >

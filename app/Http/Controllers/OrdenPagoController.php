@@ -133,7 +133,7 @@ class OrdenPagoController extends Controller
         $todasMatriculas = Matricula::where('id_alumno', $alumno->id_alumno)
             ->where('estado', true)
             ->with(['grado.niveleducativo', 'seccion'])
-            ->orderBy('año_escolar', 'desc')
+            ->orderBy('id_periodo_academico', 'desc')
             ->get();
 
         if ($todasMatriculas->isEmpty()) {

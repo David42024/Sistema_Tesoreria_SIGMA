@@ -12,15 +12,16 @@ class PeriodoAcademicoSeeder extends Seeder
     {
         // Crear períodos académicos
         $periodos = [
-            ['nombre' => '2024'],
-            ['nombre' => '2025'],
-            ['nombre' => '2026'],
+            ['nombre' => '2024', 'estado' => 0],
+            ['nombre' => '2025', 'estado' => 0],
+            ['nombre' => '2026', 'estado' => 1], // Activo
+            ['nombre' => '2027', 'estado' => 0],
         ];
 
         foreach ($periodos as $periodo) {
             PeriodoAcademico::firstOrCreate(
                 ['nombre' => $periodo['nombre']],
-                ['estado' => true]
+                ['estado' => $periodo['estado']]
             );
         }
 

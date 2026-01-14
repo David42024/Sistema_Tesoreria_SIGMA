@@ -145,7 +145,7 @@
                     @php
                         $matriculaActiva = \App\Models\Matricula::where('id_alumno', $alumno['id_alumno'])
                             ->where('estado', true)
-                            ->orderBy('año_escolar', 'desc')
+                            ->orderBy('id_periodo_academico', 'desc')
                             ->first();
                         $gradientClass = 'card-gradient-' . (($index % 6) + 1);
                     @endphp

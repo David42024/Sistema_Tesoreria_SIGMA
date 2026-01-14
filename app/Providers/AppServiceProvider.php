@@ -179,6 +179,14 @@ class AppServiceProvider extends ServiceProvider
                     'view_details' => ['Director', 'Secretaria'],
                     'download' => ['Director'],
                 ],
+                // ✅ AGREGADO: Permisos para solicitudes_prematricula
+                'solicitudes_prematricula' => [
+                    'view' => ['Director', 'Secretaria'],
+                    'create' => ['Director', 'Secretaria'],
+                    'edit' => ['Director', 'Secretaria'],
+                    'delete' => ['Director'],
+                    'download' => ['Director', 'Secretaria'],
+                ],
             ]
         ]);
 

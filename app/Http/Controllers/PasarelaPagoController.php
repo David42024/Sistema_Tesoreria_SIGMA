@@ -463,7 +463,7 @@ class PasarelaPagoController extends Controller
             $matricula = $alumno->matriculas()
                 ->where('estado', true)
                 ->with(['grado', 'seccion'])
-                ->orderBy('año_escolar', 'desc')
+                ->orderBy('id_periodo_academico', 'desc')
                 ->first();
         }
         

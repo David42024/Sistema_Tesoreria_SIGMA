@@ -5,6 +5,7 @@ namespace App\Helpers\PreMatricula;
 use App\Models\Grado;
 use App\Models\NivelEducativo;
 use App\Models\Matricula;
+use App\Models\PeriodoAcademico;
 use Carbon\Carbon;
 
 class PromocionHelper
@@ -57,18 +58,22 @@ class PromocionHelper
         $finFebActual = Carbon::create($año, self::PREMATRICULA_MES_FIN, self::PREMATRICULA_DIA_FIN);
 
         if ($hoy->between($inicioNov, $finFeb)) {
+            $periodo = PeriodoAcademico::where('nombre', (string)($año + 1))->first();
             return [
                 'activo' => true,
                 'año_escolar' => $año + 1,
+                'id_periodo_academico' => $periodo?->id_periodo_academico,
                 'fecha_inicio' => $inicioNov,
                 'fecha_fin' => $finFeb,
             ];
         }
 
         if ($hoy->between($inicioNovAnterior, $finFebActual)) {
+            $periodo = PeriodoAcademico::where('nombre', (string)$año)->first();
             return [
                 'activo' => true,
                 'año_escolar' => $año,
+                'id_periodo_academico' => $periodo?->id_periodo_academico,
                 'fecha_inicio' => $inicioNovAnterior,
                 'fecha_fin' => $finFebActual,
             ];
@@ -77,15 +82,16 @@ class PromocionHelper
         return [
             'activo' => false,
             'año_escolar' => null,
+            'id_periodo_academico' => null,
             'fecha_inicio' => null,
             'fecha_fin' => null,
         ];
     }
 
-    public static function tieneMatriculaEnAño($idAlumno, $añoEscolar)
+    public static function tieneMatriculaEnAño($idAlumno, $idPeriodoAcademico)
     {
         return Matricula::where('id_alumno', $idAlumno)
-            ->where('año_escolar', $añoEscolar)
+            ->where('id_periodo_academico', $idPeriodoAcademico)
             ->where('estado', 1)
             ->exists();
     }
@@ -94,7 +100,7 @@ class PromocionHelper
     {
         return Matricula::where('id_alumno', $idAlumno)
             ->where('estado', 1)
-            ->orderBy('año_escolar', 'desc')
+            ->orderBy('id_periodo_academico', 'desc')
             ->orderBy('id_matricula', 'desc')
             ->with(['grado', 'grado.nivelEducativo', 'seccion'])
             ->first();
@@ -110,8 +116,8 @@ class PromocionHelper
         $periodo = self::periodoPrematriculaActivo();
 
         $tieneMatricula = false;
-        if ($periodo['activo'] && $periodo['año_escolar']) {
-            $tieneMatricula = self::tieneMatriculaEnAño($idAlumno, $periodo['año_escolar']);
+        if ($periodo['activo'] && $periodo['id_periodo_academico']) {
+            $tieneMatricula = self::tieneMatriculaEnAño($idAlumno, $periodo['id_periodo_academico']);
         }
 
         // Detectar si es alumno nuevo (sin matrícula previa)

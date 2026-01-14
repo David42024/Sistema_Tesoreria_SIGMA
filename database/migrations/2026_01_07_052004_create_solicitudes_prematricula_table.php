@@ -19,7 +19,6 @@ return new class extends Migration
             $table->string('otros_nombres_apoderado', 100)->nullable();
             $table->string('numero_contacto', 20);
             $table->string('correo_electronico', 100)->nullable();
-            $table->string('direccion_apoderado', 255)->nullable();
             $table->string('parentesco', 50);
             
             // ========== DATOS DEL ALUMNO ==========
@@ -31,32 +30,28 @@ return new class extends Migration
             $table->char('sexo', 1);
             $table->date('fecha_nacimiento');
             $table->string('direccion_alumno', 255)->nullable();
-            $table->string('telefono_alumno', 20)->nullable();
             $table->string('colegio_procedencia', 100)->nullable();
-            
-            // Grado al que postula
-            $table->unsignedInteger('id_grado');
-            
-            // ========== DOCUMENTOS ==========
-            $table->string('partida_nacimiento', 255)->nullable();
-            $table->string('certificado_estudios', 255)->nullable();
             $table->string('foto_alumno', 255)->nullable();
             
+            // Grado y Sección solicitados
+            $table->unsignedInteger('id_grado');
+            $table->char('nombreSeccion', 2)->nullable();
+            
             // ========== ESTADO Y SEGUIMIENTO ==========
-            $table->enum('estado', ['pendiente', 'en_revision', 'aprobada', 'rechazada'])->default('pendiente');
+            $table->enum('estado', ['pendiente', 'en_revision', 'aprobado', 'rechazado'])->default('pendiente');
             $table->text('observaciones')->nullable();
             $table->text('motivo_rechazo')->nullable();
             
-            // Usuario generado
-            $table->unsignedBigInteger('id_usuario')->nullable();
-            
-            // Auditoría
-            $table->unsignedBigInteger('revisado_por')->nullable();
-            $table->timestamp('fecha_revision')->nullable();
-            
             $table->timestamps();
             
+            // Foreign Keys
             $table->foreign('id_grado')->references('id_grado')->on('grados');
+            $table->foreign(['id_grado', 'nombreSeccion'])
+                  ->references(['id_grado', 'nombreSeccion'])
+                  ->on('secciones')
+                  ->onUpdate('cascade')
+                  ->onDelete('restrict');
+            
             $table->unique('dni_alumno');
         });
     }

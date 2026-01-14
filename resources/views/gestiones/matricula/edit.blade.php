@@ -54,10 +54,10 @@
                     <div>
                         @include('components.forms.combo', [
                             'label' => 'Año Escolar',
-                            'name' => 'año_escolar',
-                            'error' => $errors->first(Str::snake('Año Escolar')) ?? false,
-                            'value' => old(Str::snake('Año Escolar')) ?? $data['default'][Str::snake('Año Escolar')],
-                            'options' => $data['añosEscolares'],
+                            'name' => 'id_periodo_academico',
+                            'error' => $errors->first('id_periodo_academico') ?? false,
+                            'value' => old('id_periodo_academico') ?? $data['default']['id_periodo_academico'],
+                            'options' => $data['periodosAcademicos'],
                             'options_attributes' => ['id', 'descripcion']
                         ])
                     </div>

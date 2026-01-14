@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('secciones', function (Blueprint $table) {
             $table->unsignedInteger('id_grado');
             $table->char('nombreSeccion', 2);
+            $table->unsignedTinyInteger('capacidad_maxima')->default(30);
             $table->primary(['id_grado', 'nombreSeccion']);
 
             $table->foreign('id_grado')

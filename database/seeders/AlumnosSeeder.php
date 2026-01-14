@@ -132,7 +132,6 @@ class AlumnosSeeder extends Seeder
                             $matricula = Matricula::create([
                                 'id_alumno' => $alumno->id_alumno,
                                 'id_periodo_academico' => $periodoActual?->id_periodo_academico,
-                                'año_escolar' => $anioActual,
                                 'fecha_matricula' => now(),
                                 'escala' => $escala,
                                 'id_grado' => $grado->id_grado,
