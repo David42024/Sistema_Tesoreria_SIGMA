@@ -17,7 +17,7 @@
             </div>
             <div class="flex gap-3">
                 <input form="form" type="submit" id="btnCrearMatriculaTop"
-                    class="cursor-pointer inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-500 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:border-gray-400 disabled:hover:bg-gray-400"
+                    class="cursor-pointer inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-500 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:border-gray-400 disabled:hover:bg-gray-400" :disabled="$store.matricula.tieneDeudaPendiente || $store.matricula.tieneMatriculaActual"
                     value="Crear Matrícula"
                 >
                 <a href="{{ $data['return'] }}"
@@ -27,9 +27,6 @@
                 </a>
             </div>
         </div>
-
-
-
 
         <form method="POST" id="form" action="" class="mt-8">
             @method('PUT')
@@ -153,43 +150,37 @@
                             </div>
                         </div>
                     </div>
-
-                    {{-- Año Escolar (campo fijo al año actual) --}}
-                    <div class="lg:col-span-4 flex justify-end">
-                        <div class="flex flex-col">
-                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-                                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                </svg>
-                                Año Escolar
-                            </label>
-                            @include('components.forms.combo', [
-                                'label' => 'Año Escolar',
-                                'name' => 'id_periodo_academico',
-                                'error' => $errors->first('id_periodo_academico') ?? false,
-                                'value' => old('id_periodo_academico'),
-                                'options' => $data['periodosAcademicos'] ?? [],
-                                'options_attributes' => ['id', 'descripcion']
-                            ])
-                        </div>
-                    </div>
                 </div>
 
                 {{-- Campo oculto para ID del alumno --}}
                 <input type="hidden" id="alumno" name="alumno" value="{{ old('alumno') }}">
 
                 {{-- Mensaje de advertencia para alumnos ya matriculados --}}
-                <div id="mensajeAlumnoMatriculado" class="hidden mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 rounded-lg">
+                <div id="mensajeAlumnoMatriculado" x-show="$store.matricula.tieneMatriculaActual" class="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 rounded-lg">
                     <div class="flex items-start gap-3">
                         <svg class="w-6 h-6 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                         </svg>
                         <div class="flex-1">
-                            <h4 class="text-sm font-bold text-amber-800 dark:text-amber-200 mb-1">Alumno Ya Matriculado</h4>
+                            <h4 class="text-sm font-bold text-amber-800 dark:text-amber-200 mb-1">Alumno ya está matriculado</h4>
                             <p class="text-sm text-amber-700 dark:text-amber-300">
-                                Este alumno ya tiene una matrícula activa en el sistema. No se puede crear una nueva matrícula hasta que la actual sea dada de baja.
+                                Este alumno ya tiene una matrícula activa en el presente período académico. No se puede continuar.
                             </p>
-                            <p class="text-xs text-amber-600 dark:text-amber-400 mt-2" id="detalleMatriculaActual"></p>
+                        </div>
+                    </div>
+                </div>
+
+               {{-- Mensaje de advertencia para alumnos ya matriculados --}}
+                <div id="mensajeAlumnoMatriculado" x-show="!$store.matricula.tieneMatriculaActual && $store.matricula.tieneDeudaPendiente" class="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 rounded-lg">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-6 h-6 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-bold text-amber-800 dark:text-amber-200 mb-1">Alumno posee deudas sin pagar</h4>
+                            <p class="text-sm text-amber-700 dark:text-amber-300">
+                                El alumno posee deudas sin pagar de períodos académicos anteriores. No se puede continuar.
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -369,7 +360,7 @@
                     Cancelar
                 </a>
                 <input form="form" type="submit" id="btnCrearMatriculaBottom"
-                    class="cursor-pointer inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-500 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:border-gray-400 disabled:hover:bg-gray-400"
+                    class="cursor-pointer inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-500 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:border-gray-400 disabled:hover:bg-gray-400" :disabled="$store.matricula.tieneDeudaPendiente || $store.matricula.tieneMatriculaActual"
                     value="Crear Matrícula"
                 >
             </div>
@@ -379,10 +370,15 @@
 
 @section('custom-js')
     <script>
-    // ========== FUNCIONALIDAD DE BÚSQUEDA Y FILTROS ==========
-    document.addEventListener('DOMContentLoaded', function () {
-        const btnActivarFiltros = document.getElementById('btnActivarFiltros');
-        const contenedorFiltros = document.getElementById('contenedorFiltros');
+
+        document.addEventListener('alpine:init', () => {
+            Alpine.store('matricula', { tieneDeudaPendiente: false, tieneMatriculaActual: false })
+        })
+
+        // ========== FUNCIONALIDAD DE BÚSQUEDA Y FILTROS ==========
+        document.addEventListener('DOMContentLoaded', function () {
+            const btnActivarFiltros = document.getElementById('btnActivarFiltros');
+            const contenedorFiltros = document.getElementById('contenedorFiltros');
         const btnActivarDNI = document.getElementById('btnActivarDNI');
         const btnActivarCodigo = document.getElementById('btnActivarCodigo');
         const contenedorFiltroDNI = document.getElementById('contenedorFiltroDNI');
@@ -594,31 +590,6 @@
             resultadosBusqueda.classList.add('hidden');
             buscarAlumnoInput.value = alumno.nombre_completo;
 
-            // Verificar si el alumno ya está matriculado
-            const mensajeMatriculado = document.getElementById('mensajeAlumnoMatriculado');
-            const detalleMatricula = document.getElementById('detalleMatriculaActual');
-            const btnTop = document.getElementById('btnCrearMatriculaTop');
-            const btnBottom = document.getElementById('btnCrearMatriculaBottom');
-
-            if (alumno.id_matricula) {
-                // Alumno ya matriculado - mostrar advertencia y deshabilitar botones
-                if (mensajeMatriculado) {
-                    mensajeMatriculado.classList.remove('hidden');
-                    if (detalleMatricula) {
-                        detalleMatricula.textContent = `Matrícula actual: ${alumno.grado} - ${alumno.seccion}`;
-                    }
-                }
-                if (btnTop) btnTop.disabled = true;
-                if (btnBottom) btnBottom.disabled = true;
-            } else {
-                // Alumno sin matrícula - ocultar advertencia y habilitar botones
-                if (mensajeMatriculado) {
-                    mensajeMatriculado.classList.add('hidden');
-                }
-                if (btnTop) btnTop.disabled = false;
-                if (btnBottom) btnBottom.disabled = false;
-            }
-
             // Cargar información financiera
             cargarInfoFinanciera(alumno.id_alumno);
         }
@@ -780,6 +751,7 @@
                 return response.json();
             })
             .then(data => {
+                Alpine.store('matricula', { tieneDeudaPendiente: data.tiene_deuda_pendiente, tieneMatriculaActual: data.tiene_matricula_en_periodo_actual });
                 infoBox.innerHTML = `
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">

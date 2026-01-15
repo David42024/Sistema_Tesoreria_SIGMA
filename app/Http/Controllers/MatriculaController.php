@@ -17,19 +17,27 @@ use App\Helpers\Tables\SearchBoxComponent;
 use App\Helpers\Tables\TableButtonComponent;
 use App\Helpers\Tables\TableComponent;
 use App\Helpers\Tables\TablePaginator;
+use App\Interfaces\ICronogramaAcademicoService;
 use App\Interfaces\IExporterService;
 use App\Interfaces\IExportRequestFactory;
+use App\Interfaces\IRegistroPagosService;
 use App\Models\Alumno;
 use App\Models\Grado;
 use App\Models\Matricula;
 use App\Models\NivelEducativo;
 use App\Models\Seccion;
+use App\Services\Cronograma\CronogramaAcademicoService;
 use App\Services\Matricula\GeneraConstanciaMatricula;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class MatriculaController extends Controller
 {
+    protected ICronogramaAcademicoService $cronogramaService;
+    public function __construct(ICronogramaAcademicoService $cronogramaService)
+    {
+        $this->cronogramaService = $cronogramaService;
+    }
 
     private static function doSearch($sqlColumns, $search, $pagination, $appliedFilters = [])
     {
@@ -164,7 +172,9 @@ class MatriculaController extends Controller
 
         $content->addButton($vermasButton);
         $content->addButton($descargaButton);
-        $content->addButton($createNewEntryButton);
+
+        if ($this->cronogramaService->matriculaHabilitada())
+            $content->addButton($createNewEntryButton);
 
         /* Paginador */
         $paginatorRowsSelector = new PaginatorRowsSelectorComponent();
@@ -303,16 +313,6 @@ class MatriculaController extends Controller
             ];
         })->values()->toArray();
 
-        $periodosAcademicos = \App\Models\PeriodoAcademico::where('estado', 1)
-            ->select('id_periodo_academico', 'nombre')
-            ->get()
-            ->map(function($periodo) {
-                return [
-                    'id' => $periodo->id_periodo_academico,
-                    'descripcion' => $periodo->nombre
-                ];
-            });
-
         $niveles = NivelEducativo::where("estado", "=", "1")
             ->select('id_nivel', 'nombre_nivel')
             ->distinct()
@@ -338,8 +338,8 @@ class MatriculaController extends Controller
 
         $data = [
             'return' => route('matricula_view', ['abort' => true]),
+            'id_periodo_academico' => $this->cronogramaService->periodoActual()->getKey(),
             'alumnos' => $resultado_alumnos,
-            'periodosAcademicos' => $periodosAcademicos,
             'escalas' => $escalas,
             'grados' => $grados,
             'secciones' => $secciones,
@@ -362,7 +362,6 @@ class MatriculaController extends Controller
                 'required',
                 $this->validarAlumnoYaMatriculado($request),
             ],
-            'id_periodo_academico' => 'required|exists:periodos_academicos,id_periodo_academico',
             'nivel_educativo' => 'required',
             'grado' => 'required',
             'seccion' => [
@@ -371,7 +370,6 @@ class MatriculaController extends Controller
             ],
         ], [
             'alumno.required' => 'El alumno es obligatorio.',
-            'id_periodo_academico.required' => 'El periodo académico es obligatorio.',
             'nivel_educativo.required' => 'El nivel educativo es obligatorio.',
             'grado.required' => 'El grado es obligatorio.',
             'seccion.required' => 'La sección es obligatoria.',
@@ -379,7 +377,7 @@ class MatriculaController extends Controller
 
         $matricula = Matricula::create([
             'id_alumno' => $request->alumno,
-            'id_periodo_academico' => $request->id_periodo_academico,
+            'id_periodo_academico' => CronogramaAcademicoService::periodoActual()->getKey(),
             'fecha_matricula' => Carbon::now(),
             'id_grado' => $seccionData['id_grado'],
             'nombreSeccion' => $seccionData['nombreSeccion'],
@@ -456,7 +454,7 @@ class MatriculaController extends Controller
         $periodosAcademicos = \App\Models\PeriodoAcademico::where('estado', 1)
             ->select('id_periodo_academico', 'nombre')
             ->get()
-            ->map(function($periodo) {
+            ->map(function ($periodo) {
                 return [
                     'id' => $periodo->id_periodo_academico,
                     'descripcion' => $periodo->nombre
@@ -588,9 +586,14 @@ class MatriculaController extends Controller
         ];
     }
 
-    public function getAlumnoInfo($id)
+    public function getAlumnoInfo($id, ICronogramaAcademicoService $cronogramaService, IRegistroPagosService $registroPagosService)
     {
-        $alumno = Alumno::findOrFail($id);
+        $alumno = Alumno::find($id);
+
+        $tieneDeuda = $registroPagosService->poseeDeudaSinPagar($alumno);
+        $tieneMatricula = Matricula::where('id_periodo_academico', '=', $cronogramaService->periodoActual()->getKey())
+            ->where('id_alumno', '=', $alumno->getKey())
+            ->exists();
 
         // Supongamos que el alumno tiene un campo "escala"
         $escala = $alumno->escala ?? 'E';
@@ -619,6 +622,8 @@ class MatriculaController extends Controller
         $totalDeuda = $montoMensual * $cuotasPendientes;
 
         return response()->json([
+            'tiene_deuda_pendiente' => $tieneDeuda,
+            'tiene_matricula_en_periodo_actual' => $tieneMatricula,
             'escala' => $escala,
             'deuda_mensual' => number_format($montoMensual, 2),
             'cuotas_pendientes' => $cuotasPendientes,

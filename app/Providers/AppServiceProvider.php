@@ -11,6 +11,7 @@ use App\Interfaces\ICronogramaAcademicoService;
 use App\Interfaces\IExporterFactory;
 use App\Interfaces\IExporterService;
 use App\Interfaces\IExportRequestFactory;
+use App\Interfaces\IRegistroPagosService;
 use App\Models\Administrativo;
 use App\Models\Alumno;
 use App\Models\Catedra;
@@ -45,6 +46,7 @@ use App\Observers\PagoObserver;
 use App\Observers\PersonalObserver;
 use App\Observers\SeccionObserver;
 use App\Observers\UserObserver;
+use App\Services\Contable\RegistroPagosService;
 use App\Services\Cronograma\CronogramaAcademicoService;
 use App\Services\Matricula\GeneraConstanciaMatricula;
 use Illuminate\Pagination\Paginator;
@@ -63,6 +65,7 @@ class AppServiceProvider extends ServiceProvider
             return new GeneraConstanciaMatricula('constancias.matricula');
         });
         $this->app->singleton(ICronogramaAcademicoService::class, CronogramaAcademicoService::class);
+        $this->app->singleton(IRegistroPagosService::class, RegistroPagosService::class);
     }
 
     public function boot(): void
