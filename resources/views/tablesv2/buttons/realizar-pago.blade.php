@@ -1,4 +1,4 @@
-<button @click="alert('Esta ventana está en proceso de ejecución')"
+<a href="{{ route('familiar_pago_pago_realizar_index') }}"
     class="inline-flex items-center gap-2 rounded-lg border border-green-300 bg-green-50 px-4 py-2.5 text-theme-sm font-medium text-green-700 shadow-theme-xs hover:bg-green-100 hover:text-green-800 dark:bg-green-900/20 dark:border-green-700 dark:text-green-300 dark:hover:bg-green-900/30 dark:hover:text-green-200 transition-colors duration-200">
 
     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -6,4 +6,4 @@
     </svg>
 
     <span>Realizar Pago</span>
-</button>
+</a>

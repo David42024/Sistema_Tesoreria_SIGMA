@@ -31,6 +31,8 @@ use App\Helpers\Tables\TableComponent;
 use App\Helpers\Tables\TablePaginator;
 use App\Http\Controllers\Controller;
 use App\Models\NivelEducativo;
+use App\Models\DistribucionPagoDeuda;
+use App\Models\DetallePago;
 
 class FamiliarPagosController extends Controller
 {
@@ -47,6 +49,26 @@ class FamiliarPagosController extends Controller
         $requested = $request->session()->get('alumno');
         $query->where('id_alumno', '=', $requested->getKey());
 
+        // Excluir deudas que fueron pagadas y validadas completamente
+        // Paso 1: Obtener IDs de pagos que tienen estado_validacion = 'validado' en detalle_pago
+        $idPagosValidados = DetallePago::where('estado_validacion', '=', 'validado')
+            ->where('estado', '=', true)
+            ->pluck('id_pago')
+            ->unique()
+            ->toArray();
+
+        // Paso 2: Obtener IDs de deudas asociadas a esos pagos validados a través de distribucion_pago_deuda
+        if (!empty($idPagosValidados)) {
+            $idDeudasValidadas = DistribucionPagoDeuda::whereIn('id_pago', $idPagosValidados)
+                ->pluck('id_deuda')
+                ->unique()
+                ->toArray();
+
+            // Paso 3: Excluir esas deudas de la consulta
+            if (!empty($idDeudasValidadas)) {
+                $query->whereNotIn('id_deuda', $idDeudasValidadas);
+            }
+        }
 
         FilteredSearchQuery::fromQuery($query, $sqlColumns, $search, $appliedFilters, $columnMap);
 
@@ -150,16 +172,25 @@ class FamiliarPagosController extends Controller
 
     private static function doSearchPagos($sqlColumns, $search, $maxEntriesShow, $appliedFilters = [], Request $request){
         $columnMap = [
-            'ID' => 'id_pago',
-            'Por el periodo' => 'Deuda.periodo',
-            'Monto' => 'monto',
+            'Mes' => 'ConceptoPago.descripcion',
+            'Nº Orden' => 'OrdenPago.codigo_orden',
+            'Monto Pagado' => 'monto_subtotal',
+            'Estado' => 'estado_validacion',
         ];
 
-        $query = Pago::where('estado', '=', true);
+        $query = \App\Models\DetalleOrdenPago::query();
 
+        // Obtener el alumno seleccionado de la sesión
         $requested = $request->session()->get('alumno');
-        $query->whereHas('deuda', function($q) use ($requested) {
+
+        // Filtrar por alumno a través de la orden de pago
+        $query->whereHas('ordenPago', function($q) use ($requested) {
             $q->where('id_alumno', '=', $requested->getKey());
+        });
+
+        // Solo mostrar detalles de órdenes que tienen pagos asociados
+        $query->whereHas('ordenPago.pagos', function($q) {
+            $q->where('estado', '=', true);
         });
 
         FilteredSearchQuery::fromQuery($query, $sqlColumns, $search, $appliedFilters, $columnMap);
@@ -176,7 +207,7 @@ class FamiliarPagosController extends Controller
             return redirect(route('principal'));
         }
 
-        $sqlColumns = ['id_pago', 'Deuda.periodo', 'fecha_pago', 'monto', 'observaciones'];
+        $sqlColumns = ['ConceptoPago.descripcion', 'OrdenPago.codigo_orden', 'monto_subtotal'];
         $resource = 'pagos';
 
         $params = RequestHelper::extractSearchParams($request);
@@ -184,12 +215,12 @@ class FamiliarPagosController extends Controller
         $header = Utils::crearHeaderConAlumnos($request);
 
         $page = CRUDTablePage::new()
-            ->title("Pagos")
+            ->title("Pagos Anteriores")
             ->header($header)
             ->sidebar(new FamiliarSidebarComponent());
 
         $content = CRUDTableComponent::new()
-            ->title("Pagos de tu alumno");
+            ->title("Pagos Anteriores de tu alumno");
 
         $filterButton = new TableButtonComponent("tablesv2.buttons.filtros");
         $content->addButton($filterButton);
@@ -212,35 +243,55 @@ class FamiliarPagosController extends Controller
 
         if ($params->page > $query->lastPage()){
             $params->page = 1;
-            $query = static::doSearchPagos($sqlColumns, $params->search, $params->showing, $params->applied_filters);
+            $query = static::doSearchPagos($sqlColumns, $params->search, $params->showing, $params->applied_filters, $request);
         }
 
-        $periodosExistentes = Deuda::select("periodo")
-            ->distinct()
-            ->where("estado", "=", 1)
-            ->pluck("periodo");
+        // Obtener conceptos únicos para el filtro
+        $conceptosExistentes = \App\Models\ConceptoPago::whereHas('detallesOrden', function($q) use ($requested) {
+            $q->whereHas('ordenPago', function($q2) use ($requested) {
+                $q2->where('id_alumno', '=', $requested->getKey())
+                   ->whereHas('pagos', function($q3) {
+                       $q3->where('estado', '=', true);
+                   });
+            });
+        })->pluck('descripcion', 'descripcion');
 
         $filterConfig = new FilterConfig();
         $filterConfig->filters = [
-            "ID", "Por el periodo", "Monto"
+            "Mes", "Nº Orden", "Monto Pagado"
         ];
         $filterConfig->filterOptions = [
-            "Por el periodo" => $periodosExistentes,
+            "Mes" => $conceptosExistentes,
         ];
         $content->filterConfig = $filterConfig;
 
         $table = new TableComponent();
-        $table->columns = ["ID", "Período", "Fecha de Pago", "Monto", "Observaciones"];
+        $table->columns = ["Mes", "Nº Orden", "Monto Pagado", "Estado"];
         $table->rows = [];
 
-        foreach ($query as $pago){
-            array_push($table->rows,
-            [
-                $pago->id_pago,
-                $pago->deuda->periodo,
-                \Carbon\Carbon::parse($pago->fecha_pago)->format('d/m/Y'),
-                $pago->monto,
-                $pago->observaciones ?? 'No registra.'
+        foreach ($query as $detalleOrden){
+            // Obtener el estado de validación navegando por las relaciones
+            $estadoValidacion = 'Sin estado';
+
+            // Desde DetalleOrdenPago -> OrdenPago -> Pagos -> DetallePago
+            if ($detalleOrden->ordenPago && $detalleOrden->ordenPago->pagos) {
+                foreach ($detalleOrden->ordenPago->pagos as $pago) {
+                    if ($pago->estado && $pago->detallesPago) {
+                        foreach ($pago->detallesPago as $detallePago) {
+                            if ($detallePago->estado_validacion) {
+                                $estadoValidacion = ucfirst($detallePago->estado_validacion);
+                                break 2; // Salir de ambos foreach
+                            }
+                        }
+                    }
+                }
+            }
+
+            array_push($table->rows, [
+                $detalleOrden->conceptoPago ? $detalleOrden->conceptoPago->descripcion : 'N/A',
+                $detalleOrden->ordenPago ? $detalleOrden->ordenPago->codigo_orden : 'N/A',
+                'S/. ' . number_format($detalleOrden->monto_subtotal, 2),
+                $estadoValidacion
             ]);
         }
 

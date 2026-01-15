@@ -36,7 +36,7 @@ class FamiliarTrasladoController extends Controller
         // Obtener matrícula activa
         $matriculaActiva = $alumno->matriculas()
             ->where('estado', true)
-            ->orderBy('año_escolar', 'desc')
+            ->orderBy('id_periodo_academico', 'desc')
             ->first();
 
         // Obtener todas las deudas activas del alumno del año completo (marzo a diciembre)
@@ -103,7 +103,7 @@ class FamiliarTrasladoController extends Controller
         // Obtener matrícula activa
         $matriculaActiva = $alumno->matriculas()
             ->where('estado', true)
-            ->orderBy('año_escolar', 'desc')
+            ->orderBy('id_periodo_academico', 'desc')
             ->first();
 
         // Obtener todas las deudas activas del alumno

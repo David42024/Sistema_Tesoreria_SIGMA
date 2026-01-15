@@ -10,11 +10,11 @@ class ConceptoPago extends Model
     /** @use HasFactory<\Database\Factories\ConceptoPagoFactory> */
     use HasFactory;
 
-    protected $table = 'conceptos_pago'; 
+    protected $table = 'conceptos_pago';
 
     protected $primaryKey = 'id_concepto';
-    public $incrementing = true; 
-    protected $keyType = 'int'; 
+    public $incrementing = true;
+    protected $keyType = 'int';
 
     protected $fillable = [
         'descripcion',
@@ -27,11 +27,14 @@ class ConceptoPago extends Model
     protected function casts(): array
     {
         return [
-            'monto' => 'decimal:2', 
-            'estado' => 'boolean',  
+            'monto' => 'decimal:2',
+            'estado' => 'boolean',
         ];
     }
 
-    
+    public function detallesOrden()
+    {
+        return $this->hasMany(DetalleOrdenPago::class, 'id_concepto', 'id_concepto');
+    }
 
 }

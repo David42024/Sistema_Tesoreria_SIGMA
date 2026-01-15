@@ -9,11 +9,11 @@ class Deuda extends Model
 {
     use HasFactory;
 
-    protected $table = 'deudas'; 
+    protected $table = 'deudas';
 
-    protected $primaryKey = 'id_deuda'; 
-    public $incrementing = true; 
-    protected $keyType = 'int'; 
+    protected $primaryKey = 'id_deuda';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
     protected $fillable = [
         'id_alumno',
@@ -31,11 +31,11 @@ class Deuda extends Model
     protected function casts(): array
     {
         return [
-            'fecha_limite' => 'date', 
+            'fecha_limite' => 'date',
             'monto_total' => 'decimal:2',
             'monto_a_cuenta' => 'decimal:2',
-            'monto_adelantado' => 'decimal:2', 
-            'estado' => 'boolean', 
+            'monto_adelantado' => 'decimal:2',
+            'estado' => 'boolean',
         ];
     }
 
@@ -57,5 +57,10 @@ class Deuda extends Model
     public function detallesOrdenPago()
     {
         return $this->hasMany(DetalleOrdenPago::class, 'id_deuda', 'id_deuda');
+    }
+
+    public function distribucionesPago()
+    {
+        return $this->hasMany(DistribucionPagoDeuda::class, 'id_deuda', 'id_deuda');
     }
 }
