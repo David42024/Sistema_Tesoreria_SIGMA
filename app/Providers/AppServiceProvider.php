@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App;
 use App\Helpers\Exporter\Factories\ExporterFactory;
 use App\Helpers\Exporter\Factories\ExportRequestFactory;
 use App\Helpers\Exporter\Services\ExporterService;
@@ -61,15 +62,14 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(GeneraConstanciaMatricula::class, function () {
             return new GeneraConstanciaMatricula('constancias.matricula');
         });
-        $this->app->singleton(ICronogramaAcademicoService::class, function () {
-            $periodoAcademico = PeriodoAcademico::find(Configuracion::obtener(Configuracion::ID_PERIODO_ACADEMICO_ACTUAL));
-            return new CronogramaAcademicoService($periodoAcademico);
-        });
+        $this->app->singleton(ICronogramaAcademicoService::class, CronogramaAcademicoService::class);
     }
 
     public function boot(): void
     {
-        Schema::defaultStringLength(191);
+        if (!App::runningInConsole() && !App::runningInConsoleCommand('migrate')) {
+            $this->noConsoleBoot();
+        }
 
         $this->registerObservers();
 
@@ -93,6 +93,11 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-resource', function (User $user, $resource, $action = 'view') {
             return $this->hasResourcePermissions($user, $resource, $action);
         });
+    }
+
+    protected function noConsoleBoot()
+    {
+        CronogramaAcademicoService::establecerPeriodo(PeriodoAcademico::find(Configuracion::obtener(Configuracion::ID_PERIODO_ACADEMICO_ACTUAL)));
     }
 
     private function registerObservers()
