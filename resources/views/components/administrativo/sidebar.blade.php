@@ -142,7 +142,11 @@
                 'Reportes financieros',
                 'Estadísticas'
             ],
-            'links' => [],
+            'links' => [
+                'Reportes académicos' => 'gestiones.reportes.academicos',
+                'Reportes financieros' => 'gestiones.reportes.financieros',
+                'Estadísticas' => 'gestiones.reportes.estadisticas'
+            ],
             'icon' => 'reporte'
         ])
     @endcan

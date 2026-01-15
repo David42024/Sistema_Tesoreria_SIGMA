@@ -21,6 +21,9 @@
     <form method="POST" id="form-datos" action="{{ route('familiar_alumno_guardar_datos') }}" enctype="multipart/form-data" class="mt-8">
         @csrf
 
+        <!-- Input hidden para marcar eliminación de foto -->
+        <input type="hidden" name="remove_photo" id="remove_photo" value="0">
+
         <!-- Foto del Alumno -->
         <div class="mb-8">
             <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
@@ -30,14 +33,27 @@
                 Foto del Alumno
             </h3>
             <div class="flex items-center gap-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-                <!-- Foto actual -->
-                <div class="flex-shrink-0">
+                <!-- Foto actual con botón de eliminar -->
+                <div class="flex-shrink-0 relative" id="foto-container">
                     <img
                         id="preview-foto"
                         src="{{ $data['alumno']->foto_url }}"
                         alt="Foto de {{ $data['alumno']->primer_nombre }}"
                         class="w-32 h-32 rounded-full object-cover border-4 border-gray-200 dark:border-gray-600"
                     >
+                    @if($data['alumno']->foto)
+                    <button
+                        type="button"
+                        id="btn-remove-foto"
+                        onclick="removePhoto()"
+                        class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition-colors"
+                        title="Eliminar foto"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                    @endif
                 </div>
 
                 <!-- Input para cambiar foto -->
@@ -70,6 +86,10 @@
                     @error('foto')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
+                    <!-- Mensaje de foto eliminada -->
+                    <p id="foto-removed-msg" class="text-orange-500 text-sm mt-2 hidden">
+                        La foto será eliminada al guardar los cambios.
+                    </p>
                 </div>
             </div>
         </div>
@@ -399,9 +419,14 @@
 </div>
 
 <script>
+        const defaultPhotoUrl = "{{ asset('images/default-avatar.png') }}";
+
         function previewImage(input) {
             const preview = document.getElementById('preview-foto');
             const filename = document.getElementById('foto_filename');
+            const removePhotoInput = document.getElementById('remove_photo');
+            const removedMsg = document.getElementById('foto-removed-msg');
+            const btnRemove = document.getElementById('btn-remove-foto');
 
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
@@ -415,7 +440,45 @@
                 filename.innerText = input.files[0].name;
                 filename.classList.remove('text-gray-600');
                 filename.classList.add('text-gray-900', 'dark:text-white');
+
+                // Resetear el estado de eliminación si se selecciona una nueva foto
+                removePhotoInput.value = '0';
+                removedMsg.classList.add('hidden');
+
+                // Mostrar botón de eliminar si estaba oculto
+                if (btnRemove) {
+                    btnRemove.classList.remove('hidden');
+                }
             }
+        }
+
+        function removePhoto() {
+            const preview = document.getElementById('preview-foto');
+            const removePhotoInput = document.getElementById('remove_photo');
+            const removedMsg = document.getElementById('foto-removed-msg');
+            const btnRemove = document.getElementById('btn-remove-foto');
+            const fileInput = document.getElementById('foto');
+            const filename = document.getElementById('foto_filename');
+
+            // Marcar para eliminación
+            removePhotoInput.value = '1';
+
+            // Mostrar imagen por defecto
+            preview.src = defaultPhotoUrl;
+
+            // Ocultar botón de eliminar
+            if (btnRemove) {
+                btnRemove.classList.add('hidden');
+            }
+
+            // Limpiar input de archivo
+            fileInput.value = '';
+            filename.innerText = 'Seleccionar imagen...';
+            filename.classList.remove('text-gray-900', 'dark:text-white');
+            filename.classList.add('text-gray-600');
+
+            // Mostrar mensaje de confirmación
+            removedMsg.classList.remove('hidden');
         }
 </script>
 

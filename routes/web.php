@@ -31,6 +31,9 @@ Route::middleware(['auth'])->group(function(){
     require __DIR__ . '/familiar/routes.php';
     require __DIR__ . '/configuracion/routes.php';
 
+    // Rutas para reportes de gestiones
+    require __DIR__ . '/gestiones_reportes.php';
+
     Route::get('/tests', [\App\Http\Controllers\Tests\CRUDTestController::class, 'index']);
 });
 

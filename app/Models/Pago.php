@@ -20,15 +20,10 @@ class Pago extends Model
         'id_deuda',
         'id_orden',
         'tipo_pago',
-        'numero_pago_parcial',
         'fecha_pago',
         'monto',
         'observaciones',
         'estado',
-        'metodo_pago',
-        'numero_operacion',
-        'datos_adicionales',
-        'voucher_path',
     ];
 
     protected function casts(): array
@@ -62,7 +57,6 @@ class Pago extends Model
 
     public function conceptoPago()
     {
-        // Relación a través de deuda
         return $this->hasOneThrough(
             ConceptoPago::class,
             Deuda::class,

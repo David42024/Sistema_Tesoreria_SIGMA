@@ -12,16 +12,8 @@ return new class extends Migration
             $table->increments('id_pago');
             $table->unsignedInteger('id_deuda')->nullable();
             $table->unsignedInteger('id_orden')->nullable();
-            
-            // Tipo de pago: 'orden_completa', 'orden_parcial', 'deuda_individual'
             $table->enum('tipo_pago', ['orden_completa', 'orden_parcial', 'deuda_individual'])
                   ->default('deuda_individual');
-            
-            // Número de pago parcial (1 o 2) - solo para tipo_pago = 'orden_parcial'
-            $table->tinyInteger('numero_pago_parcial')
-                  ->nullable()
-                  ->comment('Número del pago parcial (1 o 2) cuando tipo_pago = orden_parcial');
-            
             $table->dateTime('fecha_pago');
             $table->decimal('monto', 10, 2);
             $table->text('observaciones')->nullable();

@@ -138,7 +138,15 @@ class FamiliarAlumnoController extends Controller
         $alumnoModel = Alumno::find($alumno->getKey());
 
         // Manejar la foto
-        if ($request->hasFile('foto')) {
+        $nuevaFoto = $alumnoModel->foto; // Mantener foto actual por defecto
+
+        if ($request->input('remove_photo') === '1' || $request->input('remove_photo') == 1) {
+            // Eliminar foto si existe
+            if ($alumnoModel->foto) {
+                Storage::disk('public')->delete($alumnoModel->foto);
+            }
+            $nuevaFoto = null;
+        } elseif ($request->hasFile('foto')) {
             // Eliminar foto anterior si existe
             if ($alumnoModel->foto) {
                 Storage::disk('public')->delete($alumnoModel->foto);
@@ -147,36 +155,34 @@ class FamiliarAlumnoController extends Controller
             // Guardar nueva foto
             $foto = $request->file('foto');
             $nombreFoto = 'alumno_' . $alumnoModel->getKey() . '_' . time() . '.' . $foto->getClientOriginalExtension();
-            $rutaFoto = $foto->storeAs('fotos/alumnos', $nombreFoto, 'public');
-
-            $alumnoModel->foto = $rutaFoto;
+            $nuevaFoto = $foto->storeAs('fotos/alumnos', $nombreFoto, 'public');
         }
 
-        $alumnoModel->update([
-            'foto' => $alumnoModel->foto,
-            'apellido_paterno' => $request->input('apellido_paterno'),
-            'apellido_materno' => $request->input('apellido_materno'),
-            'primer_nombre' => $request->input('primer_nombre'),
-            'otros_nombres' => $request->input('otros_nombres'),
-            'departamento' => $request->input('departamento'),
-            'provincia' => $request->input('provincia'),
-            'distrito' => $request->input('distrito'),
-            'direccion' => $request->input('direccion'),
-            'lengua_materna' => $request->input('lengua_materna'),
-            'estado_civil' => $request->input('estado_civil'),
-            'religion' => $request->input('religion'),
-            'parroquia_bautizo' => $request->input('parroquia_bautizo'),
-            'telefono' => $request->input('telefono'),
-            'medio_transporte' => $request->input('medio_transporte'),
-            'tiempo_demora' => $request->input('tiempo_demora'),
-            'material_vivienda' => $request->input('material_vivienda'),
-            'energia_electrica' => $request->input('energia_electrica'),
-            'agua_potable' => $request->input('agua_potable'),
-            'desague' => $request->input('desague'),
-            'ss_hh' => $request->input('ss_hh'),
-            'num_habitantes' => $request->input('num_habitantes'),
-            'situacion_vivienda' => $request->input('situacion_vivienda'),
-        ]);
+        // Actualizar todos los campos incluyendo foto
+        $alumnoModel->foto = $nuevaFoto;
+        $alumnoModel->apellido_paterno = $request->input('apellido_paterno');
+        $alumnoModel->apellido_materno = $request->input('apellido_materno');
+        $alumnoModel->primer_nombre = $request->input('primer_nombre');
+        $alumnoModel->otros_nombres = $request->input('otros_nombres');
+        $alumnoModel->departamento = $request->input('departamento');
+        $alumnoModel->provincia = $request->input('provincia');
+        $alumnoModel->distrito = $request->input('distrito');
+        $alumnoModel->direccion = $request->input('direccion');
+        $alumnoModel->lengua_materna = $request->input('lengua_materna');
+        $alumnoModel->estado_civil = $request->input('estado_civil');
+        $alumnoModel->religion = $request->input('religion');
+        $alumnoModel->parroquia_bautizo = $request->input('parroquia_bautizo');
+        $alumnoModel->telefono = $request->input('telefono');
+        $alumnoModel->medio_transporte = $request->input('medio_transporte');
+        $alumnoModel->tiempo_demora = $request->input('tiempo_demora');
+        $alumnoModel->material_vivienda = $request->input('material_vivienda');
+        $alumnoModel->energia_electrica = $request->input('energia_electrica');
+        $alumnoModel->agua_potable = $request->input('agua_potable');
+        $alumnoModel->desague = $request->input('desague');
+        $alumnoModel->ss_hh = $request->input('ss_hh');
+        $alumnoModel->num_habitantes = $request->input('num_habitantes');
+        $alumnoModel->situacion_vivienda = $request->input('situacion_vivienda');
+        $alumnoModel->save();
 
         // Actualizar sesión con datos nuevos
         $request->session()->put('alumno', $alumnoModel->fresh());

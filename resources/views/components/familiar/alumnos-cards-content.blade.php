@@ -269,21 +269,24 @@ function seleccionarAlumno(idAlumno) {
 </script>
 
 @else
-<div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 flex items-center justify-center">
-    <div class="max-w-md mx-auto rounded-2xl bg-white dark:bg-gray-800 shadow-2xl p-12 text-center border border-gray-200 dark:border-gray-700">
-
-        <div class="text-white text-6xl mb-6">
-            <i class="fas fa-user-slash"></i>
+<div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-start justify-center pt-24 px-4">
+    <div class="max-w-lg mx-auto rounded-3xl bg-white dark:bg-gray-900 shadow-2xl p-12 text-center border border-blue-100 dark:border-blue-900 mt-0">
+        <div class="flex flex-col items-center mb-6">
+            <div class="bg-gradient-to-br from-yellow-400 to-yellow-500 dark:from-yellow-600 dark:to-yellow-800 rounded-full p-5 shadow-lg mb-4 animate-bounce">
+                <svg class="w-14 h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" />
+                </svg>
+            </div>
+            <h3 class="text-2xl font-extrabold text-gray-800 dark:text-white mb-2">¡Sin estudiantes vinculados!</h3>
+            <p class="text-base text-gray-600 dark:text-gray-300 mb-2">Aún no tienes estudiantes asociados a tu cuenta de apoderado.</p>
+            <p class="text-sm text-blue-600 dark:text-blue-300 mb-4">Si crees que esto es un error, por favor contacta al administrador del sistema o acércate a la institución.</p>
+            <!-- Botón de contacto eliminado por solicitud -->
         </div>
-
-        <h3 class="text-white text-2xl font-bold mb-4">
-            No hay alumnos vinculados
-        </h3>
-
-        <p class="text-white/90">
-            Actualmente no tienes ningún alumno asociado a tu cuenta.<br>
-            Contacta con el administrador del sistema.
-        </p>
+        <div class="mt-8">
+            <svg class="mx-auto w-24 h-24 text-blue-100 dark:text-blue-900" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+        </div>
     </div>
 </div>
 @endif

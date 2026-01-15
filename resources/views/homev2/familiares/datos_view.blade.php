@@ -1,7 +1,7 @@
 <div class="p-8 m-4 bg-gray-100 dark:bg-white/[0.03] rounded-2xl" id="view-container">
     <!-- Mensaje de éxito -->
     @if(session('success'))
-        <div class="mb-6 rounded-lg bg-green-50 p-4 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-400 border border-green-200 dark:border-green-800">
+        <div id="success-message" class="mb-6 rounded-lg bg-green-50 p-4 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-400 border border-green-200 dark:border-green-800">
             <div class="flex items-center gap-2">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
@@ -109,12 +109,25 @@
                             <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-4">Fotografía del Estudiante</h3>
                             
                             <div class="flex flex-col items-center">
-                                <div class="relative w-60 h-72 mb-4 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-lg">
-                                    <img 
-                                        src="{{ $data['foto_url'] }}" 
-                                        alt="Foto del estudiante" 
-                                        class="w-full h-full object-cover rounded-lg"
-                                    >
+                                <div class="relative w-60 h-72 mb-4 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center">
+                                    @if($data['alumno']->foto)
+                                        <img
+                                            src="{{ $data['foto_url'] }}"
+                                            alt="Foto del estudiante"
+                                            class="w-full h-full object-cover rounded-lg"
+                                        >
+                                    @else
+                                        {{-- Avatar por defecto según sexo --}}
+                                        @if(($data['default']['sexo'] ?? 'M') === 'F')
+                                            <svg class="w-32 h-32 text-pink-400" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        @else
+                                            <svg class="w-32 h-32 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        @endif
+                                    @endif
                                 </div>
 
                                 <!-- Información del estudiante -->
@@ -504,6 +517,7 @@
         // Preparar datos para la vista de edición
         $editData = $data;
         $editData['alumno'] = (object) [
+            'foto' => $data['alumno']->foto ?? null,
             'foto_url' => $data['foto_url'] ?? '',
             'codigo_educando' => $data['default']['codigo_educando'] ?? '',
             'codigo_modular' => $data['default']['codigo_modular'] ?? '',
@@ -577,6 +591,9 @@
         <form method="POST" id="form-datos" action="{{ route('familiar_alumno_guardar_datos') }}" enctype="multipart/form-data">
             @csrf
 
+            <!-- Input hidden para marcar eliminación de foto -->
+            <input type="hidden" name="remove_photo" id="remove_photo" value="0">
+
             <!-- Tab Navigation -->
             <div class="border-b border-gray-200 dark:border-gray-700 mb-6 relative">
                 <!-- Barra deslizante animada -->
@@ -647,29 +664,34 @@
                             
                             <div class="flex flex-col items-center">
                                 <!-- Drop Zone -->
-                                <div class="relative w-60 h-72 mb-4 bg-white dark:bg-gray-900 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg transition-colors hover:border-blue-400 dark:hover:border-blue-500">
-                                    <!-- Ícono de cámara por defecto -->
-                                    <div id="camera-placeholder-edit" class="absolute inset-0 flex flex-col items-center justify-center text-gray-300 dark:text-gray-600 hidden">
-                                        <svg class="w-20 h-20 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                        </svg>
-                                        <p class="text-sm font-medium">Arrastra o haz clic</p>
-                                        <p class="text-xs mt-1">para subir foto</p>
+                                <div id="drop-zone" class="relative w-60 h-72 mb-4 bg-white dark:bg-gray-900 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg transition-all duration-200 ease-in-out hover:border-blue-400 dark:hover:border-blue-500 flex items-center justify-center cursor-pointer">
+                                    <!-- Avatar por defecto según sexo (se muestra cuando no hay foto) -->
+                                    <div id="avatar-placeholder-edit" class="absolute inset-0 flex flex-col items-center justify-center {{ $editData['alumno']->foto ? 'hidden' : '' }}">
+                                        @if(($editData['alumno']->sexo ?? 'M') === 'F')
+                                            <svg class="w-32 h-32 text-pink-400" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        @else
+                                            <svg class="w-32 h-32 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        @endif
                                     </div>
-                                    
-                                    <img id="preview-foto" 
-                                        src="{{ $editData['alumno']->foto_url }}" 
-                                        alt="Preview" 
-                                        class="w-full h-full object-cover rounded-lg"
+
+                                    <img id="preview-foto"
+                                        src="{{ $editData['alumno']->foto_url }}"
+                                        alt="Preview"
+                                        class="w-full h-full object-cover rounded-lg {{ $editData['alumno']->foto ? '' : 'hidden' }}"
                                     >
-                                    
+
                                     <!-- Botón para eliminar foto -->
+                                    @if($editData['alumno']->foto)
                                     <button type="button" id="remove-photo-btn" onclick="removePhoto()" class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 z-10">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                         </svg>
                                     </button>
+                                    @endif
                                 </div>
                                 
                                 <input type="file" 
@@ -1102,6 +1124,15 @@
 </div>
 
 <script>
+        // Ocultar mensaje de éxito después de 3 segundos
+        document.addEventListener('DOMContentLoaded', function() {
+            const successMsg = document.getElementById('success-message');
+            if (successMsg) {
+                setTimeout(() => {
+                    successMsg.style.display = 'none';
+                }, 3000);
+            }
+        });
     // Función para cambiar entre pestañas (Vista)
     function switchTab(tabName) {
         // Ocultar todas las pestañas
@@ -1218,16 +1249,18 @@
                 }
             }, 100);
 
-            // Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }
 
-    function previewImage(input) {
+    function previewImage(eventOrInput) {
+        // Manejar tanto evento como input directamente
+        const input = eventOrInput.target || eventOrInput;
         const preview = document.getElementById('preview-foto');
         const filename = document.getElementById('foto_filename');
         const removeBtn = document.getElementById('remove-photo-btn');
-        const cameraPlaceholder = document.getElementById('camera-placeholder-edit');
+        const avatarPlaceholder = document.getElementById('avatar-placeholder-edit');
+        const removePhotoInput = document.getElementById('remove_photo');
 
         if (input.files && input.files[0]) {
             const reader = new FileReader();
@@ -1235,8 +1268,21 @@
             reader.onload = function(e) {
                 preview.src = e.target.result;
                 preview.classList.remove('hidden');
-                if (removeBtn) removeBtn.classList.remove('hidden');
-                if (cameraPlaceholder) cameraPlaceholder.classList.add('hidden');
+                if (avatarPlaceholder) avatarPlaceholder.classList.add('hidden');
+
+                // Mostrar botón de eliminar (crear si no existe)
+                let removeButton = document.getElementById('remove-photo-btn');
+                if (!removeButton) {
+                    const dropZone = preview.parentElement;
+                    removeButton = document.createElement('button');
+                    removeButton.type = 'button';
+                    removeButton.id = 'remove-photo-btn';
+                    removeButton.onclick = removePhoto;
+                    removeButton.className = 'absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 z-10';
+                    removeButton.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+                    dropZone.appendChild(removeButton);
+                }
+                removeButton.classList.remove('hidden');
             }
 
             reader.readAsDataURL(input.files[0]);
@@ -1246,6 +1292,9 @@
                 filename.classList.remove('text-gray-600');
                 filename.classList.add('text-gray-900', 'dark:text-white');
             }
+
+            // Resetear el flag de eliminación si se selecciona una nueva foto
+            if (removePhotoInput) removePhotoInput.value = '0';
         }
     }
 
@@ -1253,17 +1302,21 @@
         const preview = document.getElementById('preview-foto');
         const fotoInput = document.getElementById('foto');
         const removeBtn = document.getElementById('remove-photo-btn');
-        const cameraPlaceholder = document.getElementById('camera-placeholder-edit');
-        
+        const avatarPlaceholder = document.getElementById('avatar-placeholder-edit');
+        const removePhotoInput = document.getElementById('remove_photo');
+
+        // Marcar para eliminación en el servidor
+        if (removePhotoInput) removePhotoInput.value = '1';
+
         // Limpiar el input de archivo
-        if (fotoInput) fotoInput.value = '';
-        
+        if (fotoInput) fotoInput.value = null;
+
         // Ocultar preview y botón de eliminar
         if (preview) preview.classList.add('hidden');
         if (removeBtn) removeBtn.classList.add('hidden');
-        
-        // Mostrar placeholder de cámara
-        if (cameraPlaceholder) cameraPlaceholder.classList.remove('hidden');
+
+        // Mostrar avatar placeholder según sexo
+        if (avatarPlaceholder) avatarPlaceholder.classList.remove('hidden');
     }
 
     // Inicializar al cargar la página
@@ -1294,5 +1347,67 @@
                 });
             }
         }, 100);
+
+        // Configurar Drag & Drop para la zona de foto
+        const dropZone = document.getElementById('drop-zone');
+        const fotoInput = document.getElementById('foto');
+
+        if (dropZone && fotoInput) {
+            // Prevenir comportamiento por defecto del navegador
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            // Resaltar zona al arrastrar
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight(e) {
+                dropZone.classList.remove('border-gray-300', 'dark:border-gray-600');
+                dropZone.classList.add('border-blue-500', 'border-4', 'bg-blue-50', 'dark:bg-blue-900/20', 'scale-105');
+            }
+
+            function unhighlight(e) {
+                dropZone.classList.remove('border-blue-500', 'border-4', 'bg-blue-50', 'dark:bg-blue-900/20', 'scale-105');
+                dropZone.classList.add('border-gray-300', 'dark:border-gray-600');
+            }
+
+            // Manejar el drop
+            dropZone.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+
+                if (files.length > 0 && files[0].type.startsWith('image/')) {
+                    // Asignar el archivo al input
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(files[0]);
+                    fotoInput.files = dataTransfer.files;
+
+                    // Disparar el evento change para que se ejecute previewImage
+                    const event = new Event('change', { bubbles: true });
+                    fotoInput.dispatchEvent(event);
+                }
+            }
+
+            // Click en la zona también abre el selector de archivos
+            dropZone.addEventListener('click', function(e) {
+                // No abrir si se hizo click en el botón de eliminar
+                if (!e.target.closest('#remove-photo-btn')) {
+                    fotoInput.click();
+                }
+            });
+        }
     });
 </script>
