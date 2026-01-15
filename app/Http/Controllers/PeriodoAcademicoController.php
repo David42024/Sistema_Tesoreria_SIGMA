@@ -22,6 +22,10 @@ use App\Interfaces\IExportRequestFactory;
 use App\Models\Configuracion;
 use App\Models\EstadoPeriodoAcademico;
 use App\Models\PeriodoAcademico;
+use App\Models\TipoEtapaPeriodoAcademico;
+use App\Models\EstadoEtapaCronogramaPeriodoAcademico;
+use App\Models\CronogramaPeriodoAcademico;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class PeriodoAcademicoController extends Controller
@@ -161,6 +165,8 @@ class PeriodoAcademicoController extends Controller
     {
         $data = [
             'return' => route('periodo_academico_view', ['abort' => true]),
+            'tipos_etapa' => TipoEtapaPeriodoAcademico::orderBy('id_tipo_etapa_pa', 'asc')->get(),
+            'estados_etapa' => EstadoEtapaCronogramaPeriodoAcademico::orderBy('id_estado_etapa_pa', 'asc')->get()->except([EstadoEtapaCronogramaPeriodoAcademico::ANULADO, EstadoEtapaCronogramaPeriodoAcademico::FINALIZADO]),
         ];
 
         return view('gestiones.periodo_academico.create', compact('data'));
@@ -170,16 +176,33 @@ class PeriodoAcademicoController extends Controller
     {
         $request->validate([
             'nombre' => 'required|string|max:50|unique:periodos_academicos,nombre',
+            'cronograma' => 'nullable|string',
         ], [
             'nombre.required' => 'El nombre del período es obligatorio.',
             'nombre.max' => 'El nombre no puede superar los 50 caracteres.',
             'nombre.unique' => 'Ya existe un período con este nombre.',
+            'cronograma.string' => 'Error en el formato del cronograma enviado.',
         ]);
+
 
         $periodo = PeriodoAcademico::create([
             'nombre' => $request->input('nombre'),
             'id_estado_periodo_academico' => $request->input('estado_del_período')
         ]);
+
+        if ($request->has('cronograma')) {
+            $cronogramaData = json_decode($request->input('cronograma'), true);
+
+            foreach ($cronogramaData as $etapa) {
+                CronogramaPeriodoAcademico::create([
+                    'id_periodo_academico' => $periodo->getKey(),
+                    'id_tipo_etapa_pa' => $etapa['tipo'],
+                    'id_estado_etapa_pa' => $etapa['estado'],
+                    'fecha_inicio' => $etapa['fecha_inicio'],
+                    'fecha_fin' => $etapa['fecha_fin'],
+                ]);
+            }
+        }
 
         if (PeriodoAcademico::count() == 1) {
             $this->cronogramaService->establecerPeriodoActual($periodo);
@@ -190,7 +213,28 @@ class PeriodoAcademicoController extends Controller
 
     public function edit(Request $request, int $id)
     {
-        return view('gestiones.periodo_academico.edit', ['id' => $id]);
+        $periodo = PeriodoAcademico::with('cronograma')->findOrFail($id);
+
+        $cronogramaFormatted = $periodo->cronograma->map(function ($etapa) {
+            return [
+                'tipo' => $etapa->id_tipo_etapa_pa,
+                'estado' => $etapa->id_estado_etapa_pa,
+                'fecha_inicio' => Carbon::parse($etapa->fecha_inicio)->format('Y-m-d\TH:i'),
+                'fecha_fin' => Carbon::parse($etapa->fecha_fin)->format('Y-m-d\TH:i'),
+            ];
+        });
+
+        $data = [
+            'periodo' => $periodo,
+            'return' => route('periodo_academico_view'),
+            'tipos_etapa' => TipoEtapaPeriodoAcademico::orderBy('id_tipo_etapa_pa', 'asc')->get(),
+            'estados_etapa' => EstadoEtapaCronogramaPeriodoAcademico::orderBy('id_estado_etapa_pa', 'asc')->get()->except([EstadoEtapaCronogramaPeriodoAcademico::ANULADO, EstadoEtapaCronogramaPeriodoAcademico::FINALIZADO]),
+            'cronograma_actual' => $cronogramaFormatted,
+            'es_actual' => $this->cronogramaService->esActual($periodo),
+            'estados_periodo' => EstadoPeriodoAcademico::all(),
+        ];
+
+        return view('gestiones.periodo_academico.edit', compact('data'));
     }
 
     public function editEntry(Request $request, $id)
@@ -201,21 +245,37 @@ class PeriodoAcademicoController extends Controller
 
         $request->validate([
             'nombre' => 'required|string|max:50|unique:periodos_academicos,nombre,' . $id . ',id_periodo_academico',
+            'estado_del_período' => 'required|exists:estado_periodo_academico,id_estado_periodo_academico',
+            'cronograma' => 'nullable|string',
         ], [
             'nombre.required' => 'El nombre del período es obligatorio.',
             'nombre.max' => 'El nombre no puede superar los 50 caracteres.',
             'nombre.unique' => 'Ya existe un período con este nombre.',
+            'estado.required' => 'El estado es obligatorio.',
+            'cronograma.string' => 'Error en el formato del cronograma enviado.',
         ]);
 
         $periodo = PeriodoAcademico::findOrFail($id);
 
         $periodo->update([
             'nombre' => $request->input('nombre'),
+            'id_estado_periodo_academico' => $request->input('estado_del_período'),
         ]);
 
-        // Si se marcó como actual
-        if ($request->input('establecer_actual') == '1') {
-            $periodo->establecerComoActual();
+        if ($request->has('cronograma')) {
+            $periodo->cronograma()->delete();
+
+            $cronogramaData = json_decode($request->input('cronograma'), true);
+
+            foreach ($cronogramaData as $etapa) {
+                CronogramaPeriodoAcademico::create([
+                    'id_periodo_academico' => $periodo->getKey(),
+                    'id_tipo_etapa_pa' => $etapa['tipo'],
+                    'id_estado_etapa_pa' => $etapa['estado'],
+                    'fecha_inicio' => $etapa['fecha_inicio'],
+                    'fecha_fin' => $etapa['fecha_fin'],
+                ]);
+            }
         }
 
         return redirect()->route('periodo_academico_view', ['edited' => true]);
