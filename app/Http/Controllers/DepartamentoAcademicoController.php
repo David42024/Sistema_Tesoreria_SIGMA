@@ -365,7 +365,7 @@ class DepartamentoAcademicoController extends Controller
             'nombre' => $request->input('nombre'),
         ]);
 
-        return redirect(route('departamento_academico_view', ['created' => true]));
+        return redirect()->route('departamento_academico_view')->with('success', 'Departamento academico creado correctamente.');
     }
 
     public function edit(Request $request, $id)
@@ -409,7 +409,7 @@ class DepartamentoAcademicoController extends Controller
             ]);
         }
 
-        return redirect(route('departamento_academico_view', ['edited' => true]));
+        return redirect()->route('departamento_academico_view')->with('success', 'Departamento academico actualizado correctamente.');
     }
 
     public function delete(Request $request)
@@ -422,7 +422,7 @@ class DepartamentoAcademicoController extends Controller
         // Desactivar personal vinculado
         Personal::where('id_departamento', '=', $id)->update(['estado' => 0]);
 
-        return redirect(route('departamento_academico_view', ['deleted' => true]));
+        return redirect()->route('departamento_academico_view')->with('success', 'Departamento academico desactivado correctamente.');
     }
 
     /* ==================== EXPORTACIÓN ==================== */

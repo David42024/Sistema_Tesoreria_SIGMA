@@ -29,9 +29,9 @@ class AlumnosSeeder extends Seeder
 
         // Orden estricto: 3 grados Inicial, 6 Primaria, 5 Secundaria
         $nivelesGrados = [
-            'Inicial' => ['3 AÑOS', '4 AÑOS', '5 AÑOS'],
-            'Primaria' => ['PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', 'SEXTO'],
-            'Secundaria' => ['PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO']
+            'INICIAL' => ['3 AÑOS', '4 AÑOS', '5 AÑOS'],
+            'PRIMARIA' => ['PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', 'SEXTO'],
+            'SECUNDARIA' => ['PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO']
         ];
 
         foreach ($nivelesGrados as $nivel => $grados) {

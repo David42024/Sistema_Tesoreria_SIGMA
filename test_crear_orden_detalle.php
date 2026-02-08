@@ -14,6 +14,7 @@ use App\Models\Alumno;
 use App\Models\Deuda;
 use App\Models\OrdenPago;
 use App\Models\DetalleOrdenPago;
+use App\Models\Matricula;
 use Carbon\Carbon;
 
 echo "\n========================================\n";
@@ -21,7 +22,7 @@ echo "TEST: CREACIÓN DE ORDEN Y DETALLES\n";
 echo "========================================\n\n";
 
 // ID de alumno de prueba
-$alumno_id = 842;
+$alumno_id = 835;
 
 echo "1. Buscando alumno ID: $alumno_id...\n";
 $alumno = Alumno::with('matriculas')->find($alumno_id);
@@ -38,7 +39,7 @@ echo "2. Buscando deudas pendientes...\n";
 $deudas = Deuda::where('id_alumno', $alumno_id)
     ->where('estado', true)
     ->with('conceptoPago')
-    ->limit(2)
+    ->limit(24)
     ->get();
 
 echo "   Deudas encontradas: " . count($deudas) . "\n";
@@ -72,7 +73,8 @@ if (!$matricula) {
     exit(1);
 }
 
-echo "   ✓ Matrícula encontrada ID: {$matricula->id_matricula}\n\n";
+echo "   ✓ Matrícula encontrada ID: {$matricula->id_matricula}\n";
+
 
 // Calcular monto total
 $montoTotal = $deudas->sum('monto_total');
@@ -101,7 +103,7 @@ try {
         'numero_cuenta' => '1234567890',
         'fecha_orden_pago' => Carbon::now(),
         'fecha_vencimiento' => Carbon::now()->addDays(7),
-        'estado' => true,
+        'estado' => "pendiente",
         'observaciones' => NULL,
     ]);
 

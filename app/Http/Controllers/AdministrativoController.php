@@ -280,7 +280,7 @@ class AdministrativoController extends Controller
             'sueldo' => $sueldo,
         ]);
 
-        return redirect(route('administrativo_view', ['created' => true]));
+        return redirect()->route('administrativo_view')->with('success', 'Administrativo creado correctamente.');
     }
 
     public function edit(Request $request, $id){
@@ -382,7 +382,7 @@ class AdministrativoController extends Controller
             ]);
         }
 
-        return redirect(route('administrativo_view', ['edited' => true]));
+        return redirect()->route('administrativo_view')->with('success', 'Administrativo actualizado correctamente.');
     }
 
     public function delete(Request $request){
@@ -392,7 +392,7 @@ class AdministrativoController extends Controller
 
         $requested->update(['estado' => '0']);
 
-        return redirect(route('administrativo_view', ['deleted' => true]));
+        return redirect()->route('administrativo_view')->with('success', 'Administrativo desactivado correctamente.');
     }
 
     public function export(Request $request, IExportRequestFactory $requestFactory, IExporterService $exporterService)

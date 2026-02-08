@@ -330,7 +330,7 @@ class CatedraController extends Controller
             'secciones_nombreSeccion' => $seccionData['nombreSeccion']
         ]);
 
-        return redirect(route('catedra_view', ['created' => true]));
+        return redirect()->route('catedra_view')->with('success', 'Catedra creada correctamente.');
 
     }
 
@@ -495,7 +495,7 @@ class CatedraController extends Controller
         $catedra->save();
 
 
-        return redirect()->route('catedra_view', ['edited' => true]);
+        return redirect()->route('catedra_view')->with('success', 'Catedra actualizada correctamente.');
     }
 
 
@@ -505,7 +505,7 @@ class CatedraController extends Controller
         $catedra = Catedra::findOrFail($id);
         $catedra->update(['estado' => '0']);
 
-        return redirect(route('catedra_view', ['deleted' => true]));
+        return redirect()->route('catedra_view')->with('success', 'Catedra desactivada correctamente.');
     }
 
 

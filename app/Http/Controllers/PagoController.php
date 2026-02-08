@@ -554,7 +554,7 @@ class PagoController extends Controller
             }
         });
 
-        return redirect()->route('pago_view', ['created' => true])
+        return redirect()->route('pago_view')
             ->with('success', 'Pago registrado correctamente en estado pendiente.');
     }
 
@@ -608,7 +608,7 @@ class PagoController extends Controller
             'observaciones' => $request->input('observaciones'),
         ]);
 
-        return redirect(route('pago_view', ['edited' => true]));
+        return redirect()->route('pago_view')->with('success', 'Pago actualizado correctamente.');
     }
 
     public function delete(Request $request){
@@ -617,7 +617,7 @@ class PagoController extends Controller
         $requested = Pago::find($id);
         $requested->update(['estado' => '0']);
 
-        return redirect(route('pago_view', ['deleted' => true]));
+        return redirect()->route('pago_view')->with('success', 'Pago desactivado correctamente.');
     }
 
     public function viewDetalles($id)
@@ -1025,7 +1025,7 @@ class PagoController extends Controller
                 ->withInput();
         }
 
-        return redirect()->route('pago_view', ['created' => true])
+        return redirect()->route('pago_view')
             ->with('success', 'Pago completado correctamente.');
     }
 

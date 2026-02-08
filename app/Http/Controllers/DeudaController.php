@@ -289,7 +289,7 @@ class DeudaController extends Controller
             'estado' => 1
         ]);
 
-        return redirect(route('deuda_view', ['created' => true]));
+        return redirect()->route('deuda_view')->with('success', 'Deuda creada correctamente.');
     }
 
     public function edit(Request $request, $id)
@@ -349,7 +349,7 @@ class DeudaController extends Controller
             'observacion' => $request->input('observacion'),
         ]);
 
-        return redirect()->route('deuda_view', ['edited' => true]);
+        return redirect()->route('deuda_view')->with('success', 'Deuda actualizada correctamente.');
     }
 
     public function delete(Request $request)
@@ -358,7 +358,7 @@ class DeudaController extends Controller
         $deuda = Deuda::findOrFail($id);
         $deuda->update(['estado' => '0']);
 
-        return redirect(route('deuda_view', ['deleted' => true]));
+        return redirect()->route('deuda_view')->with('success', 'Deuda desactivada correctamente.');
     }
 
     /* ==================== EXPORTACIÓN ==================== */

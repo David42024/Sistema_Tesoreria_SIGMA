@@ -344,7 +344,7 @@ class DocenteController extends Controller
             'departamento' => $departamentoNombre
         ]);
 
-        return redirect(route('docente_view', ['created' => true]));
+        return redirect()->route('docente_view')->with('success', 'Docente creado correctamente.');
 
     }
 
@@ -491,7 +491,7 @@ class DocenteController extends Controller
 
         $docente->save();
 
-        return redirect()->route('docente_view', ['edited' => true]);
+        return redirect()->route('docente_view')->with('success', 'Docente actualizado correctamente.');
     }
 
     public function delete(Request $request)
@@ -500,7 +500,7 @@ class DocenteController extends Controller
         $docente = Personal::findOrFail($id);
         $docente->update(['estado' => '0']);
 
-        return redirect(route('docente_view', ['deleted' => true]));
+        return redirect()->route('docente_view')->with('success', 'Docente desactivado correctamente.');
     }
 
 

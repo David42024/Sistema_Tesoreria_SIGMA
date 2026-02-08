@@ -44,7 +44,7 @@ class UserCRUDSimplifiedTest extends TestCase
             'username' => 'nuevo_usuario',
             'tipo' => 'Personal',
             'estado' => 1
-        ]);
+        ]);     
     }
 
     /** @test */
@@ -170,7 +170,7 @@ class UserCRUDSimplifiedTest extends TestCase
         $response = $this->patch(route('usuario_editEntry', $usuario->id_usuario), [
             'username' => 'usuario_test',
             'tipo' => $usuario->tipo,
-            'estado' => '0'
+            'estado' => 0
         ]);
 
         $response->assertRedirect(route('usuario_view'));

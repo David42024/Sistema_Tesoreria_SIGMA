@@ -266,7 +266,7 @@ class CursoController extends Controller
             'nombre_curso' => $nombreCurso
         ]);
 
-        return redirect(route('curso_view', ['created' => true]));
+        return redirect()->route('curso_view')->with('success', 'Curso creado correctamente.');
     }
 
     public function edit(Request $request, $id){
@@ -320,7 +320,7 @@ class CursoController extends Controller
             $requested->update(['id_nivel' => $newNivelEducativo, 'codigo_curso' => $newCodigoCurso, 'nombre_curso' => $newNombreCurso]);
         }
 
-        return redirect(route('curso_view', ['edited' => true]));
+        return redirect()->route('curso_view')->with('success', 'Curso actualizado correctamente.');
     }
 
     public function delete(Request $request){
@@ -329,7 +329,7 @@ class CursoController extends Controller
         $requested = Curso::find($id);
         $requested->update(['estado' => '0']);
 
-        return redirect(route('curso_view', ['deleted' => true]));
+        return redirect()->route('curso_view')->with('success', 'Curso desactivado correctamente.');
     }
 
 

@@ -376,7 +376,7 @@ class FamiliarController extends Controller
                 return $familiar;
             }
 
-            return redirect(route('familiar_view', ['created' => true]));
+            return redirect()->route('familiar_view')->with('success', 'Familiar creado correctamente.');
 
         } catch (\Exception $e) {
             \DB::rollBack();
@@ -429,7 +429,7 @@ class FamiliarController extends Controller
             $familiar->alumnos()->sync($syncData);
         }
 
-        return redirect(route('familiar_view', ['edited' => true]));
+        return redirect()->route('familiar_view')->with('success', 'Familiar actualizado correctamente.');
     }
 
     public function delete(Request $request)
@@ -440,7 +440,7 @@ class FamiliarController extends Controller
 
         $requested->update(['estado' => '0']);
 
-        return redirect(route('familiar_view', ['deleted' => true]));
+        return redirect()->route('familiar_view')->with('success', 'Familiar desactivado correctamente.');
     }
 
 

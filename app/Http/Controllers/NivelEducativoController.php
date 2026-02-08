@@ -198,7 +198,7 @@ class NivelEducativoController extends Controller
             'descripcion' => $descripcion
         ]);
 
-        return redirect(route('nivel_educativo_view', ['created' => true]));
+        return redirect()->route('nivel_educativo_view')->with('success', 'Nivel educativo creado correctamente.');
     }
 
     public function edit(Request $request, $id)
@@ -235,7 +235,7 @@ class NivelEducativoController extends Controller
             $requested->update(['nombre_nivel' => $newNombre, 'descripcion' => $newDescripcion]);
         }
 
-        return redirect(route('nivel_educativo_view', ['edited' => true]));
+        return redirect()->route('nivel_educativo_view')->with('success', 'Nivel educativo actualizado correctamente.');
     }
 
     public function delete(Request $request)
@@ -255,7 +255,7 @@ class NivelEducativoController extends Controller
 
 
 
-        return redirect(route('nivel_educativo_view', ['deleted' => true]));
+        return redirect()->route('nivel_educativo_view')->with('success', 'Nivel educativo desactivado correctamente.');
     }
 
     public function export(Request $request, IExportRequestFactory $requestFactory, IExporterService $exporterService)

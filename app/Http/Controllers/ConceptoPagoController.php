@@ -201,7 +201,7 @@ class ConceptoPagoController extends Controller
             'estado' => 1
         ]);
 
-        return redirect(route('concepto_de_pago_view', ['created' => true]));
+        return redirect()->route('concepto_de_pago_view')->with('success', 'Concepto de pago creado correctamente.');
     }
 
     public function edit(Request $request, $id)
@@ -264,7 +264,7 @@ class ConceptoPagoController extends Controller
             ]);
         }
 
-        return redirect(route('concepto_de_pago_view', ['edited' => true]));
+        return redirect()->route('concepto_de_pago_view')->with('success', 'Concepto de pago actualizado correctamente.');
     }
 
     public function delete(Request $request)
@@ -273,7 +273,7 @@ class ConceptoPagoController extends Controller
         $concepto = ConceptoPago::findOrFail($id);
         $concepto->update(['estado' => '0']);
 
-        return redirect(route('concepto_de_pago_view', ['deleted' => true]));
+        return redirect()->route('concepto_de_pago_view')->with('success', 'Concepto de pago desactivado correctamente.');
     }
 
     /* ==================== EXPORTACIÓN ==================== */

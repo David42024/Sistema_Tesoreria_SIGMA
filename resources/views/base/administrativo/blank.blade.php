@@ -50,7 +50,29 @@
 
         <!-- ===== Main Content Start ===== -->
         <main class="p-4">
-            @yield('contenido', 'Página en blanco')
+          @if (session('success'))
+            <div id="flash-success" class="fixed right-4 top-20 z-[9999] max-w-md rounded-2xl border border-green-200 bg-white px-4 py-3 text-green-800 shadow-lg">
+              <div class="flex items-start gap-3">
+                <div class="mt-1 h-2.5 w-2.5 flex-none rounded-full bg-green-500"></div>
+                <div>
+                  <p class="text-sm font-semibold">Correcto</p>
+                  <p class="text-sm text-green-700">{{ session('success') }}</p>
+                </div>
+              </div>
+            </div>
+          @endif
+          @if (session('error'))
+            <div id="flash-error" class="fixed right-4 top-20 z-[9999] max-w-md rounded-2xl border border-red-200 bg-white px-4 py-3 text-red-800 shadow-lg">
+              <div class="flex items-start gap-3">
+                <div class="mt-1 h-2.5 w-2.5 flex-none rounded-full bg-red-500"></div>
+                <div>
+                  <p class="text-sm font-semibold">Atencion</p>
+                  <p class="text-sm text-red-700">{{ session('error') }}</p>
+                </div>
+              </div>
+            </div>
+          @endif
+          @yield('contenido', 'Página en blanco')
         </main>
         <!-- ===== Main Content End ===== -->
       </div>
@@ -58,6 +80,24 @@
     </div>
     <!-- ===== Page Wrapper End ===== -->
   @stack('scripts')
+  <script>
+    (function () {
+      const hideAfterMs = 3500;
+      const fadeMs = 400;
+      const ids = ['flash-success', 'flash-error'];
+
+      ids.forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        setTimeout(() => {
+          el.style.transition = `opacity ${fadeMs}ms ease`;
+          el.style.opacity = '0';
+          setTimeout(() => el.remove(), fadeMs);
+        }, hideAfterMs);
+      });
+    })();
+  </script>
   </body>
 
   @yield('custom-js')

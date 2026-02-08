@@ -760,13 +760,14 @@ class OrdenPagoController extends Controller
                     'success' => true,
                     'message' => 'Orden de pago creada exitosamente',
                     'pdf_url' => route('orden_pago_pdf', $orden->id_orden),
-                    'redirect_url' => route('orden_pago_view', ['created' => true])
+                    'redirect_url' => route('orden_pago_view', ['pdf_id' => $orden->id_orden])
                 ]);
             }
 
             // Redirigir a la vista con mensaje de éxito y el ID de la orden para abrir PDF en nueva ventana
             return redirect()
-                ->route('orden_pago_view', ['created' => true, 'pdf_id' => $orden->id_orden]);
+                ->route('orden_pago_view', ['pdf_id' => $orden->id_orden])
+                ->with('success', 'Orden de pago creada correctamente.');
 
         } catch (\Exception $e) {
             DB::rollBack();

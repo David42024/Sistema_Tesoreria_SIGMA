@@ -597,9 +597,7 @@ class AlumnoController extends Controller
         // Guardar código educando en sesión para mostrar en modal
         session()->flash('codigo_educando', $codigoEducando);
 
-        return redirect()->route('alumno_view', [
-            'created' => true
-        ]);
+        return redirect()->route('alumno_view')->with('success', 'Alumno creado correctamente.');
     }
 
     public function add_familiares_session()
@@ -721,7 +719,7 @@ class AlumnoController extends Controller
             // Limpiar sesión después del éxito
             session()->forget('temp_student_data');
 
-            return redirect()->route('alumno_view', ['created' => true]);
+            return redirect()->route('alumno_view')->with('success', 'Alumno creado correctamente.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -841,7 +839,7 @@ class AlumnoController extends Controller
         session()->forget('temp_student_data');
 
 
-        return redirect()->route('alumno_view', ['edited' => true]);
+        return redirect()->route('alumno_view')->with('success', 'Alumno actualizado correctamente.');
     }
 
 
@@ -1145,7 +1143,7 @@ class AlumnoController extends Controller
             ]);
         }
 
-        return redirect(route('alumno_view', ['edited' => true]));
+        return redirect()->route('alumno_view')->with('success', 'Alumno actualizado correctamente.');
     }
 
 
@@ -1157,7 +1155,7 @@ class AlumnoController extends Controller
 
         $requested->update(['estado' => '0']);
 
-        return redirect(route('alumno_view', ['deleted' => true]));
+        return redirect()->route('alumno_view')->with('success', 'Alumno desactivado correctamente.');
     }
 
     public function export(Request $request, IExportRequestFactory $requestFactory, IExporterService $exporterService)

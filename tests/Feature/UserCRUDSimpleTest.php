@@ -5,9 +5,12 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
 
 class UserCRUDSimpleTest extends TestCase
 {
+    use RefreshDatabase;
     /**
      * Test básico que verifica si existe la ruta de usuarios
      */

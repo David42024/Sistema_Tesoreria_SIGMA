@@ -274,7 +274,7 @@ class GradoController extends Controller
             'nombre_grado' => $request->input('nombre_del_grado')
         ]);
 
-        return redirect(route('grado_view', ['created' => true]));
+        return redirect()->route('grado_view')->with('success', 'Grado creado correctamente.');
 
     }
 
@@ -354,7 +354,7 @@ class GradoController extends Controller
         $grado->id_nivel = $request->input('nivel_educativo');
         $grado->save();
 
-        return redirect()->route('grado_view', ['edited' => true]);
+        return redirect()->route('grado_view')->with('success', 'Grado actualizado correctamente.');
     }
 
     public function delete(Request $request)
@@ -364,7 +364,7 @@ class GradoController extends Controller
         $grado->update(['estado' => '0']);
 
 
-        return redirect(route('grado_view', ['deleted' => true]));
+        return redirect()->route('grado_view')->with('success', 'Grado desactivado correctamente.');
     }
 
     public function view_details(Request $request, $id)

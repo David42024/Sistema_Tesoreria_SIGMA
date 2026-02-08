@@ -69,7 +69,7 @@ class UserCRUDTest extends TestCase
             'estado' => true
         ]);
 
-        $response->assertRedirect(route('usuario_view', ['created' => true]));
+        $response->assertRedirect(route('usuario_view'));
     }
 
     /**
@@ -108,7 +108,7 @@ class UserCRUDTest extends TestCase
         $administrativo->refresh();
         $this->assertNotNull($administrativo->id_usuario);
 
-        $response->assertRedirect(route('usuario_view', ['created' => true]));
+        $response->assertRedirect(route('usuario_view'));
     }
 
     /**
@@ -147,7 +147,7 @@ class UserCRUDTest extends TestCase
         $personal->refresh();
         $this->assertNotNull($personal->id_usuario);
 
-        $response->assertRedirect(route('usuario_view', ['created' => true]));
+        $response->assertRedirect(route('usuario_view'));
     }
 
     /**
@@ -256,7 +256,7 @@ class UserCRUDTest extends TestCase
             'estado' => false
         ]);
 
-        $response->assertRedirect(route('usuario_view', ['edited' => true]));
+        $response->assertRedirect(route('usuario_view'));
     }
 
     /**
@@ -284,7 +284,7 @@ class UserCRUDTest extends TestCase
             'estado' => false // Debe estar desactivado
         ]);
 
-        $response->assertRedirect(route('usuario_view', ['deleted' => true]));
+        $response->assertRedirect(route('usuario_view'));
     }
 
     /**

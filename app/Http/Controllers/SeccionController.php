@@ -304,7 +304,7 @@ class SeccionController extends Controller
             'nombreSeccion' => $request->input('seccion')
         ]);
 
-        return redirect(route('seccion_view', ['created' => true]));
+        return redirect()->route('seccion_view')->with('success', 'Seccion creada correctamente.');
 
     }
 
@@ -397,7 +397,7 @@ class SeccionController extends Controller
                 'estado' => 1
             ]);
 
-            return redirect(route('seccion_view', ['edited' => true]));
+            return redirect()->route('seccion_view')->with('success', 'Seccion actualizada correctamente.');
 
         } catch (\Exception $e) {
             return back()->withErrors([
@@ -461,7 +461,7 @@ class SeccionController extends Controller
                    ->update(['estado' => 0]);
 
 
-        return redirect(route('seccion_view', ['deleted' => true]));
+        return redirect()->route('seccion_view')->with('success', 'Seccion desactivada correctamente.');
     }
 
     public function export(

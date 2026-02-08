@@ -17,15 +17,16 @@ use App\Models\DetalleOrdenPago;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
-echo "\n╔════════════════════════════════════════╗\n";
-echo "║  TEST FLUJO COMPLETO: NILO PAZ GUERRA  ║\n";
-echo "╚════════════════════════════════════════╝\n\n";
+
+echo "\n╔═══════════════════════════════════════════════════╗\n";
+echo "║  TEST FLUJO COMPLETO: Rodrigo Sotelo Ferrer         ║\n";
+echo "╚═════════════════════════════════════════════════════╝\n\n";
 
 try {
-    // Buscar alumno Nilo Paz Guerra
-    echo "🔍 Buscando alumno 'Nilo Paz Guerra'...\n";
-    $alumno = Alumno::where('primer_nombre', 'like', '%Nilo%')
-        ->where('apellido_paterno', 'like', '%Paz%')
+    // Buscar alumno Rodrigo Sotelo Ferrer
+    echo "🔍 Buscando alumno 'Rodrigo Sotelo Ferrer'...\n";
+    $alumno = Alumno::where('primer_nombre', 'like', '%Rodrigo%')
+        ->where('apellido_paterno', 'like', '%Sotelo%')
         ->first();
 
     if (!$alumno) {
@@ -40,7 +41,7 @@ try {
     $deudas = Deuda::where('id_alumno', $alumno->id_alumno)
         ->where('estado', true)
         ->with('conceptoPago')
-        ->limit(2)
+        ->limit(20)
         ->get();
 
     if ($deudas->isEmpty()) {
@@ -108,7 +109,7 @@ try {
         'numero_cuenta' => '1234567890',
         'fecha_orden_pago' => $fechaOrden,
         'fecha_vencimiento' => $fechaVencimiento,
-        'estado' => true,
+        'estado' => "pendiente",
         'observaciones' => NULL,
     ]);
 

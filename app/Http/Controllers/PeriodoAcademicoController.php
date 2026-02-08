@@ -208,7 +208,7 @@ class PeriodoAcademicoController extends Controller
             $this->cronogramaService->establecerPeriodoActual($periodo);
         }
 
-        return redirect()->route('periodo_academico_view', ['created' => true]);
+        return redirect()->route('periodo_academico_view')->with('success', 'Periodo academico creado correctamente.');
     }
 
     public function edit(Request $request, int $id)
@@ -278,7 +278,7 @@ class PeriodoAcademicoController extends Controller
             }
         }
 
-        return redirect()->route('periodo_academico_view', ['edited' => true]);
+        return redirect()->route('periodo_academico_view')->with('success', 'Periodo academico actualizado correctamente.');
     }
 
     public function delete(Request $request)
@@ -294,7 +294,7 @@ class PeriodoAcademicoController extends Controller
 
         $periodo->anular();
 
-        return redirect()->route('periodo_academico_view', ['deleted' => true]);
+        return redirect()->route('periodo_academico_view')->with('success', 'Periodo academico anulado correctamente.');
     }
 
     public function establecerActual(Request $request, $id)

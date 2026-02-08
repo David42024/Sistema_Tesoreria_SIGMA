@@ -16,8 +16,6 @@ return new class extends Migration
             
             $table->string('nro_recibo', 20)->nullable();
 
-            $table->primary(['id_detalle', 'id_pago']);
-
             $table->dateTime('fecha_pago');
 
             $table->string('monto', 45);

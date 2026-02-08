@@ -11,19 +11,19 @@ Route::get('/deudas', [FamiliarPagosController::class, 'indexDeudas'])
 
 // Rutas para realizar pago
 Route::get('/realizar-pago', [FamiliarPagoRealizarController::class, 'index'])
-    ->name('pago_realizar_index');
+    ->name('realizar_index');
 
 Route::post('/realizar-pago/procesar-seleccion', [FamiliarPagoRealizarController::class, 'procesarSeleccion'])
-    ->name('pago_realizar_procesar_seleccion');
+    ->name('realizar_procesar_seleccion');
 
 Route::get('/realizar-pago/metodo', [FamiliarPagoRealizarController::class, 'mostrarMetodos'])
-    ->name('pago_realizar_metodo');
+    ->name('realizar_metodo');
 
 Route::get('/realizar-pago/metodo/{metodo}', [FamiliarPagoRealizarController::class, 'mostrarFormularioMetodo'])
-    ->name('pago_realizar_formulario');
+    ->name('realizar_formulario');
 
 Route::post('/realizar-pago/procesar', [FamiliarPagoRealizarController::class, 'procesarPago'])
-    ->name('pago_realizar_procesar');
+    ->name('realizar_procesar');
 
 Route::get('/realizar-pago/exito/{transaccion_id}', [FamiliarPagoRealizarController::class, 'mostrarExito'])
-    ->name('pago_realizar_exito');
+    ->name('realizar_exito');

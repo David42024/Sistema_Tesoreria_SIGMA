@@ -387,7 +387,7 @@ class MatriculaController extends Controller
 
         $matricula->generarDeudas();
 
-        return redirect(route('matricula_view', ['created' => true]));
+        return redirect()->route('matricula_view')->with('success', 'Matricula creada correctamente.');
     }
 
     private function validarAlumnoYaMatriculado($request)
@@ -550,7 +550,7 @@ class MatriculaController extends Controller
         $matricula->save();
 
 
-        return redirect()->route('matricula_view', ['edited' => true]);
+        return redirect()->route('matricula_view')->with('success', 'Matricula actualizada correctamente.');
     }
 
     public function delete(Request $request)
@@ -559,7 +559,7 @@ class MatriculaController extends Controller
         $matricula = Matricula::findOrFail($id);
         $matricula->update(['estado' => '0']);
 
-        return redirect(route('matricula_view', ['deleted' => true]));
+        return redirect()->route('matricula_view')->with('success', 'Matricula desactivada correctamente.');
     }
 
     private function parseSeccionValue($seccionValue)

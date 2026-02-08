@@ -21,9 +21,9 @@ echo "\n=== TEST DEBUGGING: SIMULACIÓN FLUJO REAL ===\n\n";
 
 try {
     // PASO 1: Simular selección de deudas (lo que hace procesarSeleccion)
-    echo "PASO 1: Buscando alumno Nilo Paz...\n";
-    $alumno = Alumno::where('primer_nombre', 'like', '%Nilo%')
-        ->where('apellido_paterno', 'like', '%Paz%')
+    echo "PASO 1: Buscando alumno Rodrigo Sotelo...\n";
+    $alumno = Alumno::where('primer_nombre', 'like', '%Rodrigo%')
+        ->where('apellido_paterno', 'like', '%Sotelo%')
         ->first();
 
     if (!$alumno) {
@@ -103,7 +103,7 @@ try {
         'numero_cuenta' => '1234567890',
         'fecha_orden_pago' => $fechaOrden,
         'fecha_vencimiento' => $fechaVencimiento,
-        'estado' => true,
+        'estado' => "pendiente",
         'observaciones' => NULL,
     ]);
 

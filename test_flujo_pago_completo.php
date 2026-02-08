@@ -9,17 +9,15 @@
  * 3. Que todas las vistas estén creadas
  * 4. Que las deudas no validadas se muestren correctamente
  */
-
-require __DIR__.'/vendor/autoload.php';
-
-$app = require_once __DIR__.'/bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
-
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\DB;
 use App\Models\Deuda;
 use App\Models\DetallePago;
 use App\Models\DistribucionPagoDeuda;
+
+require __DIR__ . '/vendor/autoload.php';
+
+$app = require_once __DIR__ . '/bootstrap/app.php';
+$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
 echo "\n========================================\n";
 echo "TEST: FLUJO COMPLETO DE PAGO - FAMILIAR\n";
@@ -38,13 +36,13 @@ $rutasEsperadas = [
 
 $rutasEncontradas = [];
 foreach ($rutasEsperadas as $ruta) {
-    try {
-        $url = route($ruta, ['metodo' => 'yape', 'transaccion_id' => 1], false);
-        $rutasEncontradas[] = $ruta;
-        echo "   ✓ Ruta '$ruta' encontrada: $url\n";
-    } catch (Exception $e) {
+    if (!Route::has($ruta)) {
         echo "   ✗ Ruta '$ruta' NO encontrada\n";
+        continue;
     }
+
+    $rutasEncontradas[] = $ruta;
+    echo "   ✓ Ruta '$ruta' encontrada\n";
 }
 
 echo "\n   Total: " . count($rutasEncontradas) . "/" . count($rutasEsperadas) . " rutas correctas\n\n";
@@ -93,7 +91,7 @@ foreach ($vistas as $vista) {
 
 // 4. Verificar deudas disponibles para un alumno de prueba
 echo "\n4. Verificando deudas disponibles (sin validar)...\n";
-$alumno_id = 842; // ID de ejemplo
+$alumno_id = 838; // ID de ejemplo
 
 // Obtener IDs de deudas que ya tienen pagos validados
 $pagosValidadosIds = DetallePago::where('estado_validacion', 'validado')

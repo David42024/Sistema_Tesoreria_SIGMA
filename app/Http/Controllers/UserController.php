@@ -177,7 +177,8 @@ class UserController extends Controller
         $tipos = [
             ['id' => 'Administrativo', 'descripcion' => 'Administrativo'],
             ['id' => 'Familiar', 'descripcion' => 'Familiar'],
-            ['id' => 'PreApoderado', 'descripcion' => 'PreApoderado']
+            ['id' => 'PreApoderado', 'descripcion' => 'PreApoderado'],
+            ['id' => 'Personal', 'descripcion' => 'Personal']
         ];
 
         $data = [
@@ -193,7 +194,7 @@ class UserController extends Controller
         $request->validate([
             'username' => 'required|string|max:50|unique:users,username',
             'password' => 'required|string|min:6|confirmed',
-            'tipo' => 'required|in:Administrativo,Familiar,PreApoderado',
+            'tipo' => 'required|in:Administrativo,Familiar,PreApoderado,Personal',
             'foto' => 'nullable|image|mimes:jpeg,jpg,png|max:2048'
         ], [
             'username.required' => 'El nombre de usuario es obligatorio.',
@@ -231,7 +232,7 @@ class UserController extends Controller
 
         $usuario->save();
 
-        return redirect()->route('usuario_view', ['created' => true]);
+        return redirect()->route('usuario_view')->with('success', 'Usuario creado correctamente.');
     }
 
     public function edit(Request $request, $id)
@@ -321,7 +322,7 @@ class UserController extends Controller
         $usuario->estado = $request->input('estado');
         $usuario->save();
 
-        return redirect()->route('usuario_view', ['edited' => true]);
+        return redirect()->route('usuario_view')->with('success', 'Usuario actualizado correctamente.');
     }
 
     public function delete(Request $request)
@@ -332,18 +333,18 @@ class UserController extends Controller
         // Limpiar vinculaciones antes de eliminar
         if ($usuario->tipo === 'Administrativo' && $usuario->administrativo) {
             $admin = $usuario->administrativo;
-            $admin->id_usuario = null;
+            $admin->estado = false;
             $admin->save();
         } elseif ($usuario->tipo === 'Personal' && $usuario->personal) {
             $personal = $usuario->personal;
-            $personal->id_usuario = null;
+            $personal->estado = false;
             $personal->save();
         }
 
         $usuario->estado = false;
         $usuario->save();
 
-        return redirect()->route('usuario_view', ['deleted' => true]);
+        return redirect()->route('usuario_view')->with('success', 'Usuario desactivado correctamente.');
     }
 
     public function showChangePassword(Request $request, $id)

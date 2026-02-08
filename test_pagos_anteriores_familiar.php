@@ -34,7 +34,7 @@ try {
     echo "1. Buscando alumno con pagos...\n";
 
     $detalleOrden = DetalleOrdenPago::whereHas('ordenPago.pagos', function($q) {
-        $q->where('estado', true);
+        $q->where('estado', "true");
     })->first();
 
     if (!$detalleOrden) {
