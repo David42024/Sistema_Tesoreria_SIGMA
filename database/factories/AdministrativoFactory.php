@@ -20,7 +20,7 @@ class AdministrativoFactory extends Factory
         $firstName = fake()->firstName();
         $fatherLastName = fake()->lastName();
         return [
-            'id_usuario' => null, // Por defecto sin usuario vinculado
+            'id_usuario' => User::factory(),
             'apellido_paterno' => $fatherLastName,
             'apellido_materno' => fake()->lastName(),
             'primer_nombre' => $firstName,

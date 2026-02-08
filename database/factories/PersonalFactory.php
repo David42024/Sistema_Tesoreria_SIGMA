@@ -21,7 +21,7 @@ class PersonalFactory extends Factory
         $firstName = fake()->firstName();
         $fatherLastName = fake()->lastName();
         return [
-            'id_usuario' => null, // Por defecto sin usuario vinculado
+            'id_usuario' => User::factory(),
             'codigo_personal' => fake()->unique()->numberBetween(1000, 9999),
             'apellido_paterno' => $fatherLastName,
             'apellido_materno' => fake()->lastName(),

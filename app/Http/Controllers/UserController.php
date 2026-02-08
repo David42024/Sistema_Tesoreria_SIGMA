@@ -232,6 +232,8 @@ class UserController extends Controller
 
         $usuario->save();
 
+        $this->vincularUsuario($request, $usuario);
+
         return redirect()->route('usuario_view')->with('success', 'Usuario creado correctamente.');
     }
 
@@ -242,7 +244,8 @@ class UserController extends Controller
         $tipos = [
             ['id' => 'Administrativo', 'descripcion' => 'Administrativo'],
             ['id' => 'Familiar', 'descripcion' => 'Familiar'],
-            ['id' => 'PreApoderado', 'descripcion' => 'PreApoderado']
+            ['id' => 'PreApoderado', 'descripcion' => 'PreApoderado'],
+            ['id' => 'Personal', 'descripcion' => 'Personal']
         ];
 
         $data = [
@@ -271,7 +274,7 @@ class UserController extends Controller
                 'max:50',
                 Rule::unique('users', 'username')->ignore($usuario->id_usuario, 'id_usuario')
             ],
-            'tipo' => 'required|in:Administrativo,Familiar,PreApoderado',
+            'tipo' => 'required|in:Administrativo,Familiar,PreApoderado,Personal',
             'estado' => 'required|boolean',
             'foto' => 'nullable|image|mimes:jpeg,jpg,png|max:2048'
         ], [
@@ -321,6 +324,8 @@ class UserController extends Controller
         $usuario->tipo = $request->input('tipo');
         $usuario->estado = $request->input('estado');
         $usuario->save();
+
+        $this->vincularUsuario($request, $usuario);
 
         return redirect()->route('usuario_view')->with('success', 'Usuario actualizado correctamente.');
     }
@@ -408,12 +413,46 @@ class UserController extends Controller
                 echo $pdf->output();
             }, 'usuarios.pdf');
         } else {
-            return \App\Helpers\ExcelExportHelper::download(
-                'Usuarios',
+            return \App\Helpers\ExcelExportHelper::exportExcel(
+                'usuarios.' . $format,
                 ['ID', 'Usuario', 'Tipo', 'Último Login', 'Estado'],
                 $data,
-                'usuarios.' . $format
+                function ($sheet, $rowIndex, $item) {
+                    $column = 'A';
+                    foreach ($item as $value) {
+                        $sheet->setCellValue($column . $rowIndex, $value);
+                        $column++;
+                    }
+                },
+                'Usuarios'
             );
+        }
+    }
+
+    private function vincularUsuario(Request $request, User $usuario): void
+    {
+        $idVinculado = $request->input('id_vinculado');
+        if (!$idVinculado) {
+            return;
+        }
+
+        $tipo = $request->input('tipo');
+
+        if ($tipo === 'Administrativo') {
+            $administrativo = Administrativo::find($idVinculado);
+            if ($administrativo) {
+                $administrativo->id_usuario = $usuario->id_usuario;
+                $administrativo->save();
+            }
+            return;
+        }
+
+        if ($tipo === 'Personal') {
+            $personal = Personal::where('codigo_personal', $idVinculado)->first();
+            if ($personal) {
+                $personal->id_usuario = $usuario->id_usuario;
+                $personal->save();
+            }
         }
     }
 

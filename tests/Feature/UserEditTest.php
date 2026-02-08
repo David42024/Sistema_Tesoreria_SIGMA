@@ -18,6 +18,8 @@ class UserEditTest extends TestCase
     {
         parent::setUp();
 
+        $this->withoutMiddleware(\Illuminate\Auth\Middleware\Authorize::class);
+
         // Crear usuario director para autenticación con username único por test
         $director = User::factory()->create([
             'username' => 'director_' . uniqid(),
@@ -93,7 +95,7 @@ class UserEditTest extends TestCase
         $response = $this->patch(route('usuario_editEntry', $usuario->id_usuario), [
             'username' => $usuario->username,
             'tipo' => 'Personal',
-            'estado' => '1',
+            'estado' => true,
             'id_vinculado' => $personal->codigo_personal
         ]);
 

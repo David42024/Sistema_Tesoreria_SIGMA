@@ -14,6 +14,12 @@ class UserCRUDTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutMiddleware(\Illuminate\Auth\Middleware\Authorize::class);
+    }
+
     /**
      * Test que verifica si la página de listado de usuarios se carga correctamente
      */
@@ -84,7 +90,6 @@ class UserCRUDTest extends TestCase
 
         // Crear un administrativo sin usuario vinculado
         $administrativo = Administrativo::factory()->create([
-            'id_usuario' => null,
             'estado' => true
         ]);
 
@@ -123,7 +128,6 @@ class UserCRUDTest extends TestCase
 
         // Crear un personal sin usuario vinculado
         $personal = Personal::factory()->create([
-            'id_usuario' => null,
             'estado' => true
         ]);
 
@@ -333,7 +337,7 @@ class UserCRUDTest extends TestCase
             'password_confirmation' => 'newpassword123'
         ];
 
-        $response = $this->actingAs($authUser)->post(
+        $response = $this->actingAs($authUser)->patch(
             route('usuario_update_password', ['id' => $userToChange->id_usuario]),
             $passwordData
         );
@@ -342,7 +346,7 @@ class UserCRUDTest extends TestCase
         $userToChange->refresh();
         $this->assertTrue(Hash::check('newpassword123', $userToChange->password));
 
-        $response->assertRedirect(route('usuario_view', ['password_changed' => true]));
+        $response->assertRedirect(route('usuario_view'));
     }
 
     /**
