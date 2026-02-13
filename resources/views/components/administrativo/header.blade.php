@@ -67,7 +67,7 @@
       </button>
       <!-- Hamburger Toggle BTN -->
 
-      <a href="index.html" class="lg:hidden">
+      <a href="{{ route('admin.dashboard') }}" class="lg:hidden">
         <img class="dark:hidden" src="{{ asset('images/colegio_sigma_logo.svg')}}" alt="Logo" />
         <img
           class="hidden dark:block"
@@ -122,7 +122,7 @@
             </span>
             <input
               type="text"
-              placeholder="Search or type command..."
+              placeholder="Buscar..."
               id="search-input"
               class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-200 bg-transparent py-2.5 pr-14 pl-12 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden xl:w-[430px] dark:border-gray-800 dark:bg-gray-900 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30"
             />
@@ -226,7 +226,7 @@
               <h5
                 class="text-lg font-semibold text-gray-800 dark:text-white/90"
               >
-                Notification
+                Notificaciones
               </h5>
 
               <button
@@ -252,349 +252,13 @@
             </div>
 
             <ul class="custom-scrollbar flex h-auto flex-col overflow-y-auto">
-              <li>
-                <a
-                  class="flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5"
-                  href="#"
-                >
-                  <span
-                    class="relative z-1 block h-10 w-full max-w-10 rounded-full"
-                  >
-                    <img
-                      src="./images/user/user-02.jpg"
-                      alt="User"
-                      class="overflow-hidden rounded-full"
-                    />
-                    <span
-                      class="bg-success-500 absolute right-0 bottom-0 z-10 h-2.5 w-full max-w-2.5 rounded-full border-[1.5px] border-white dark:border-gray-900"
-                    ></span>
-                  </span>
-
-                  <span class="block">
-                    <span
-                      class="text-theme-sm mb-1.5 block text-gray-500 dark:text-gray-400"
-                    >
-                      <span class="font-medium text-gray-800 dark:text-white/90"
-                        >Terry Franci</span
-                      >
-                      requests permission to change
-                      <span class="font-medium text-gray-800 dark:text-white/90"
-                        >Project - Nganter App</span
-                      >
-                    </span>
-
-                    <span
-                      class="text-theme-xs flex items-center gap-2 text-gray-500 dark:text-gray-400"
-                    >
-                      <span>Project</span>
-                      <span class="h-1 w-1 rounded-full bg-gray-400"></span>
-                      <span>5 min ago</span>
-                    </span>
-                  </span>
-                </a>
-              </li>
-
-              <li>
-                <a
-                  class="flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5"
-                  href="#"
-                >
-                  <span
-                    class="relative z-1 block h-10 w-full max-w-10 rounded-full"
-                  >
-                    <img
-                      src="./images/user/user-03.jpg"
-                      alt="User"
-                      class="overflow-hidden rounded-full"
-                    />
-                    <span
-                      class="bg-success-500 absolute right-0 bottom-0 z-10 h-2.5 w-full max-w-2.5 rounded-full border-[1.5px] border-white dark:border-gray-900"
-                    ></span>
-                  </span>
-
-                  <span class="block">
-                    <span
-                      class="text-theme-sm mb-1.5 block text-gray-500 dark:text-gray-400"
-                    >
-                      <span class="font-medium text-gray-800 dark:text-white/90"
-                        >Alena Franci</span
-                      >
-                      requests permission to change
-                      <span class="font-medium text-gray-800 dark:text-white/90"
-                        >Project - Nganter App</span
-                      >
-                    </span>
-
-                    <span
-                      class="text-theme-xs flex items-center gap-2 text-gray-500 dark:text-gray-400"
-                    >
-                      <span>Project</span>
-                      <span class="h-1 w-1 rounded-full bg-gray-400"></span>
-                      <span>8 min ago</span>
-                    </span>
-                  </span>
-                </a>
-              </li>
-
-              <li>
-                <a
-                  class="flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5"
-                  href="#"
-                >
-                  <span
-                    class="relative z-1 block h-10 w-full max-w-10 rounded-full"
-                  >
-                    <img
-                      src="./images/user/user-04.jpg"
-                      alt="User"
-                      class="overflow-hidden rounded-full"
-                    />
-                    <span
-                      class="bg-success-500 absolute right-0 bottom-0 z-10 h-2.5 w-full max-w-2.5 rounded-full border-[1.5px] border-white dark:border-gray-900"
-                    ></span>
-                  </span>
-
-                  <span class="block">
-                    <span
-                      class="text-theme-sm mb-1.5 block text-gray-500 dark:text-gray-400"
-                    >
-                      <span class="font-medium text-gray-800 dark:text-white/90"
-                        >Jocelyn Kenter</span
-                      >
-                      requests permission to change
-                      <span class="font-medium text-gray-800 dark:text-white/90"
-                        >Project - Nganter App</span
-                      >
-                    </span>
-
-                    <span
-                      class="text-theme-xs flex items-center gap-2 text-gray-500 dark:text-gray-400"
-                    >
-                      <span>Project</span>
-                      <span class="h-1 w-1 rounded-full bg-gray-400"></span>
-                      <span>15 min ago</span>
-                    </span>
-                  </span>
-                </a>
-              </li>
-
-              <li>
-                <a
-                  class="flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5"
-                  href="#"
-                >
-                  <span
-                    class="relative z-1 block h-10 w-full max-w-10 rounded-full"
-                  >
-                    <img
-                      src="./images/user/user-05.jpg"
-                      alt="User"
-                      class="overflow-hidden rounded-full"
-                    />
-                    <span
-                      class="bg-error-500 absolute right-0 bottom-0 z-10 h-2.5 w-full max-w-2.5 rounded-full border-[1.5px] border-white dark:border-gray-900"
-                    ></span>
-                  </span>
-
-                  <span class="block">
-                    <span
-                      class="text-theme-sm mb-1.5 block text-gray-500 dark:text-gray-400"
-                    >
-                      <span class="font-medium text-gray-800 dark:text-white/90"
-                        >Brandon Philips</span
-                      >
-                      requests permission to change
-                      <span class="font-medium text-gray-800 dark:text-white/90"
-                        >Project - Nganter App</span
-                      >
-                    </span>
-
-                    <span
-                      class="text-theme-xs flex items-center gap-2 text-gray-500 dark:text-gray-400"
-                    >
-                      <span>Project</span>
-                      <span class="h-1 w-1 rounded-full bg-gray-400"></span>
-                      <span>1 hr ago</span>
-                    </span>
-                  </span>
-                </a>
-              </li>
-
-              <li>
-                <a
-                  class="flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5"
-                  href="#"
-                >
-                  <span
-                    class="relative z-1 block h-10 w-full max-w-10 rounded-full"
-                  >
-                    <img
-                      src="./images/user/user-02.jpg"
-                      alt="User"
-                      class="overflow-hidden rounded-full"
-                    />
-                    <span
-                      class="bg-success-500 absolute right-0 bottom-0 z-10 h-2.5 w-full max-w-2.5 rounded-full border-[1.5px] border-white dark:border-gray-900"
-                    ></span>
-                  </span>
-
-                  <span class="block">
-                    <span
-                      class="text-theme-sm mb-1.5 block text-gray-500 dark:text-gray-400"
-                    >
-                      <span class="font-medium text-gray-800 dark:text-white/90"
-                        >Terry Franci</span
-                      >
-                      requests permission to change
-                      <span class="font-medium text-gray-800 dark:text-white/90"
-                        >Project - Nganter App</span
-                      >
-                    </span>
-
-                    <span
-                      class="text-theme-xs flex items-center gap-2 text-gray-500 dark:text-gray-400"
-                    >
-                      <span>Project</span>
-                      <span class="h-1 w-1 rounded-full bg-gray-400"></span>
-                      <span>5 min ago</span>
-                    </span>
-                  </span>
-                </a>
-              </li>
-
-              <li>
-                <a
-                  class="flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5"
-                  href="#"
-                >
-                  <span
-                    class="relative z-1 block h-10 w-full max-w-10 rounded-full"
-                  >
-                    <img
-                      src="./images/user/user-03.jpg"
-                      alt="User"
-                      class="overflow-hidden rounded-full"
-                    />
-                    <span
-                      class="bg-success-500 absolute right-0 bottom-0 z-10 h-2.5 w-full max-w-2.5 rounded-full border-[1.5px] border-white dark:border-gray-900"
-                    ></span>
-                  </span>
-
-                  <span class="block">
-                    <span
-                      class="text-theme-sm mb-1.5 block text-gray-500 dark:text-gray-400"
-                    >
-                      <span class="font-medium text-gray-800 dark:text-white/90"
-                        >Alena Franci</span
-                      >
-                      requests permission to change
-                      <span class="font-medium text-gray-800 dark:text-white/90"
-                        >Project - Nganter App</span
-                      >
-                    </span>
-
-                    <span
-                      class="text-theme-xs flex items-center gap-2 text-gray-500 dark:text-gray-400"
-                    >
-                      <span>Project</span>
-                      <span class="h-1 w-1 rounded-full bg-gray-400"></span>
-                      <span>8 min ago</span>
-                    </span>
-                  </span>
-                </a>
-              </li>
-
-              <li>
-                <a
-                  class="flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5"
-                  href="#"
-                >
-                  <span
-                    class="relative z-1 block h-10 w-full max-w-10 rounded-full"
-                  >
-                    <img
-                      src="./images/user/user-04.jpg"
-                      alt="User"
-                      class="overflow-hidden rounded-full"
-                    />
-                    <span
-                      class="bg-success-500 absolute right-0 bottom-0 z-10 h-2.5 w-full max-w-2.5 rounded-full border-[1.5px] border-white dark:border-gray-900"
-                    ></span>
-                  </span>
-
-                  <span class="block">
-                    <span
-                      class="text-theme-sm mb-1.5 block text-gray-500 dark:text-gray-400"
-                    >
-                      <span class="font-medium text-gray-800 dark:text-white/90"
-                        >Jocelyn Kenter</span
-                      >
-                      requests permission to change
-                      <span class="font-medium text-gray-800 dark:text-white/90"
-                        >Project - Nganter App</span
-                      >
-                    </span>
-
-                    <span
-                      class="text-theme-xs flex items-center gap-2 text-gray-500 dark:text-gray-400"
-                    >
-                      <span>Project</span>
-                      <span class="h-1 w-1 rounded-full bg-gray-400"></span>
-                      <span>15 min ago</span>
-                    </span>
-                  </span>
-                </a>
-              </li>
-
-              <li>
-                <a
-                  class="flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5"
-                  href="#"
-                >
-                  <span
-                    class="relative z-1 block h-10 w-full max-w-10 rounded-full"
-                  >
-                    <img
-                      src="./images/user/user-05.jpg"
-                      alt="User"
-                      class="overflow-hidden rounded-full"
-                    />
-                    <span
-                      class="bg-error-500 absolute right-0 bottom-0 z-10 h-2.5 w-full max-w-2.5 rounded-full border-[1.5px] border-white dark:border-gray-900"
-                    ></span>
-                  </span>
-
-                  <span class="block">
-                    <span
-                      class="text-theme-sm mb-1.5 block text-gray-500 dark:text-gray-400"
-                    >
-                      <span class="font-medium text-gray-800 dark:text-white/90"
-                        >Brandon Philips</span
-                      >
-                      requests permission to change
-                      <span class="font-medium text-gray-800 dark:text-white/90"
-                        >Project - Nganter App</span
-                      >
-                    </span>
-
-                    <span
-                      class="text-theme-xs flex items-center gap-2 text-gray-500 dark:text-gray-400"
-                    >
-                      <span>Project</span>
-                      <span class="h-1 w-1 rounded-full bg-gray-400"></span>
-                      <span>1 hr ago</span>
-                    </span>
-                  </span>
-                </a>
+              <li class="flex flex-col items-center justify-center py-12 text-center">
+                <svg class="mb-3 fill-gray-300 dark:fill-gray-600" width="40" height="40" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M10.75 2.29248C10.75 1.87827 10.4143 1.54248 10 1.54248C9.58583 1.54248 9.25004 1.87827 9.25004 2.29248V2.83613C6.08266 3.20733 3.62504 5.9004 3.62504 9.16748V14.4591H3.33337C2.91916 14.4591 2.58337 14.7949 2.58337 15.2091C2.58337 15.6234 2.91916 15.9591 3.33337 15.9591H4.37504H15.625H16.6667C17.0809 15.9591 17.4167 15.6234 17.4167 15.2091C17.4167 14.7949 17.0809 14.4591 16.6667 14.4591H16.375V9.16748C16.375 5.9004 13.9174 3.20733 10.75 2.83613V2.29248ZM14.875 14.4591V9.16748C14.875 6.47509 12.6924 4.29248 10 4.29248C7.30765 4.29248 5.12504 6.47509 5.12504 9.16748V14.4591H14.875ZM8.00004 17.7085C8.00004 18.1228 8.33583 18.4585 8.75004 18.4585H11.25C11.6643 18.4585 12 18.1228 12 17.7085C12 17.2943 11.6643 16.9585 11.25 16.9585H8.75004C8.33583 16.9585 8.00004 17.2943 8.00004 17.7085Z" fill="" />
+                </svg>
+                <span class="text-theme-sm text-gray-500 dark:text-gray-400">No tienes notificaciones</span>
               </li>
             </ul>
-
-            <a
-              href="#"
-              class="text-theme-sm shadow-theme-xs mt-3 flex justify-center rounded-lg border border-gray-300 bg-white p-3 font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
-            >
-              View All Notification
-            </a>
           </div>
           <!-- Dropdown End -->
         </div>
@@ -684,7 +348,7 @@
           >
             <li>
               <a
-                href="profile.html"
+                href="#"
                 class="group text-theme-sm flex items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
               >
                 <svg
@@ -707,7 +371,7 @@
             </li>
             <li>
               <a
-                href="messages.html"
+                href="#"
                 class="group text-theme-sm flex items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
               >
                 <svg
@@ -730,7 +394,7 @@
             </li>
             <li>
               <a
-                href="settings.html"
+                href="#"
                 class="group text-theme-sm flex items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
               >
                 <svg
@@ -753,7 +417,7 @@
             </li>
           </ul>
 
-          <form class="hidden" action="/logout" method="GET" id="logout"></form>
+          <form class="hidden" action="{{ route('logout') }}" method="GET" id="logout"></form>
           <button type="submit" form="logout" id="btn-cerrar-sesion"
             class="group text-theme-sm mt-3 flex items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
           >

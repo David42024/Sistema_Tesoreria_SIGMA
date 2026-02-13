@@ -33,49 +33,53 @@ class UsuariosSeeder extends Seeder
         // Deshabilitamos temporalmente el registro de acciones, ya que estamos ejecutando un seeder.
         LogsActions::disable();
 
-        Administrativo::create([
-            'id_usuario' => User::factory([
-                'username' => 'director',
-                'password' => bcrypt("12345"),
-                'tipo' => 'Administrativo',
-            ])->create()->id_usuario,
+        if (!User::where('username', 'director')->exists()) {
+            Administrativo::create([
+                'id_usuario' => User::factory([
+                    'username' => 'director',
+                    'password' => bcrypt("12345"),
+                    'tipo' => 'Administrativo',
+                ])->create()->id_usuario,
 
-            'apellido_paterno' => fake()->lastName(),
-            'apellido_materno' => fake()->lastName(),
-            'primer_nombre' => fake()->firstName(),
-            'otros_nombres' => fake()->randomElement([fake()->name(), fake()->name() . " " . fake()->name()]),
-            'dni' => fake()->numberBetween(10000000, 99999999),
-            'direccion' => fake()->address(),
-            'estado_civil' => fake()->randomElement(['S', 'C', 'V', 'D']),
-            'telefono' => fake()->phoneNumber(),
-            'seguro_social' => fake()->numberBetween('1000000000'),
-            'fecha_ingreso' => fake()->dateTimeThisDecade(),
-            'cargo' => 'Director',
-            'sueldo' => fake()->numberBetween(5000, 10000),
-            'estado' => '1'
-        ]);
+                'apellido_paterno' => fake()->lastName(),
+                'apellido_materno' => fake()->lastName(),
+                'primer_nombre' => fake()->firstName(),
+                'otros_nombres' => fake()->randomElement([fake()->name(), fake()->name() . " " . fake()->name()]),
+                'dni' => fake()->numberBetween(10000000, 99999999),
+                'direccion' => fake()->address(),
+                'estado_civil' => fake()->randomElement(['S', 'C', 'V', 'D']),
+                'telefono' => fake()->phoneNumber(),
+                'seguro_social' => fake()->numberBetween('1000000000'),
+                'fecha_ingreso' => fake()->dateTimeThisDecade(),
+                'cargo' => 'Director',
+                'sueldo' => fake()->numberBetween(5000, 10000),
+                'estado' => '1'
+            ]);
+        }
 
-        Administrativo::create([
-            'id_usuario' => User::factory([
-                'username' => 'secretaria',
-                'password' => bcrypt("12345"),
-                'tipo' => 'Administrativo',
-            ])->create()->id_usuario,
-            
-            'apellido_paterno' => fake()->lastName(),
-            'apellido_materno' => fake()->lastName(),
-            'primer_nombre' => fake()->firstName(),
-            'otros_nombres' => fake()->randomElement([fake()->name(), fake()->name() . " " . fake()->name()]),
-            'dni' => fake()->numberBetween(10000000, 99999999),
-            'direccion' => fake()->address(),
-            'estado_civil' => fake()->randomElement(['S', 'C', 'V', 'D']),
-            'telefono' => fake()->phoneNumber(),
-            'seguro_social' => fake()->numberBetween('1000000000'),
-            'fecha_ingreso' => fake()->dateTimeThisDecade(),
-            'cargo' => 'Secretaria',
-            'sueldo' => fake()->numberBetween(1500, 3500),
-            'estado' => '1'
-        ]);
+        if (!User::where('username', 'secretaria')->exists()) {
+            Administrativo::create([
+                'id_usuario' => User::factory([
+                    'username' => 'secretaria',
+                    'password' => bcrypt("12345"),
+                    'tipo' => 'Administrativo',
+                ])->create()->id_usuario,
+                
+                'apellido_paterno' => fake()->lastName(),
+                'apellido_materno' => fake()->lastName(),
+                'primer_nombre' => fake()->firstName(),
+                'otros_nombres' => fake()->randomElement([fake()->name(), fake()->name() . " " . fake()->name()]),
+                'dni' => fake()->numberBetween(10000000, 99999999),
+                'direccion' => fake()->address(),
+                'estado_civil' => fake()->randomElement(['S', 'C', 'V', 'D']),
+                'telefono' => fake()->phoneNumber(),
+                'seguro_social' => fake()->numberBetween('1000000000'),
+                'fecha_ingreso' => fake()->dateTimeThisDecade(),
+                'cargo' => 'Secretaria',
+                'sueldo' => fake()->numberBetween(1500, 3500),
+                'estado' => '1'
+            ]);
+        }
 
 
         $anioActual = Carbon::now()->year;

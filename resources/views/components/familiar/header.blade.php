@@ -67,11 +67,11 @@
       </button>
       <!-- Hamburger Toggle BTN -->
 
-      <a href="index.html" class="lg:hidden">
+      <a href="{{ route('principal') }}" class="lg:hidden">
         <img class="dark:hidden" src="{{ asset('images/colegio_sigma_logo.svg')}}" alt="Logo" />
         <img
           class="hidden dark:block"
-          src="{{ asset('images/colegio_sigma_logo.svg')}}"
+          src="{{ asset('images/colegio_sigma_logo_dark_mode.svg')}}"
           alt="Logo"
         />
       </a>

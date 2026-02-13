@@ -4,11 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Colegio Sigma - Login</title>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     @vite(['resources/css/login.css'])
+
+    <style>
+        *, *::before, *::after { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    </style>
 </head>
 <body>
+    {{-- Toast de errores: fixed en esquina superior derecha --}}
+    @if ($errors->any())
+        <div class="toast-error-container" id="toastContainer">
+            @foreach ($errors->all() as $error)
+                <div class="toast-error">
+                    <div class="toast-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="toast-content">
+                        <p>{{ $error }}</p>
+                    </div>
+                    <button type="button" class="toast-close" onclick="dismissToast(this.parentElement)">
+                        &times;
+                    </button>
+                </div>
+            @endforeach
+        </div>
+    @endif
+
     <div class="container">
         <div class="login-container">
             <div class="brand flex align-center">
@@ -19,35 +46,43 @@
                 <h2>Bienvenido,</h2>
                 <p>por favor, introduce tus datos</p>
             </div>
-            <form id="loginForm" method="POST">
+            <form id="loginForm" method="POST" action="{{ route('login') }}">
                 @csrf
-                @error('username')
-                    <p>{{ $message }}</p>
-                @enderror
 
-                @error('password')
-                    <p>{{ $message }}</p>
-                @enderror
-            
                 <div class="form-group">
                     <label for="username">Nombre de usuario</label>
-                    <input @error('username') class="invalid-input" @enderror type="text" id="username" name="username" value="{{ old('username') }}" required>
+                    {{-- Usamos una condición simple para agregar la clase 'invalid-input' --}}
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        value="{{ old('username') }}" 
+                        class="{{ $errors->has('username') ? 'invalid-input' : '' }}" 
+                        required
+                    >
                 </div>
 
                 <div class="form-group">
                     <label for="password">Contraseña</label>
-                    <input @error('password') class="invalid-input" @enderror type="password" id="password" name="password" required>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        class="{{ $errors->has('password') ? 'invalid-input' : '' }}" 
+                        required
+                    >
                 </div>
+
                 <div class="forgot-password">
                     <a href="#">¿Olvidó su contraseña?</a>
                 </div>
-                <button type="submit" class="btn-login">Iniciar sesión</button>
+
+                <button type="submit" class="btn-login" onclick="sessionStorage.removeItem('toastsDismissed')">Iniciar sesión</button>
             </form>
 
             <!-- Separador -->
-            <div style="text-align: center; margin: 1.5rem 0; position: relative;">
-                <div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: #ddd;"></div>
-                <span style="background: white; padding: 0 1rem; position: relative; color: #666; font-size: 0.9rem;">o</span>
+            <div class="login-separator">
+                <span>o</span>
             </div>
 
             <!-- Botón de Pasarela de Pagos -->
@@ -58,7 +93,7 @@
                 </svg>
                 Pagar en Línea
             </a>
-            <p style="text-align: center; font-size: 0.85rem; color: #666; margin-top: 0.5rem;">
+            <p class="helper-text">
                 Realiza tus pagos de forma rápida y segura
             </p>
 
@@ -70,7 +105,7 @@
                 </svg>
                 Solicitar Prematrícula
             </a>
-            <p style="text-align: center; font-size: 0.85rem; color: #666; margin-top: 0.5rem;">
+            <p class="helper-text">
                 ¿Nuevo estudiante? Solicita tu prematrícula aquí
             </p>
 
@@ -79,9 +114,45 @@
             </div>
             @endif
         </div>
-        <div class="image-container" style="background-image: url({{ asset('images/login/fondo.jpg') }});">
+        <div class="image-container" style="background-image: url({{ asset('images/login/fondo2.jpg') }});">
         </div>
     </div>
+
+    {{-- Script para auto-desaparecer los toasts y limpiar en navegación atrás/adelante --}}
+    <script>
+        (function() {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            // Si los toasts YA fueron mostrados antes, eliminar de inmediato
+            const toastKey = 'toastShown_' + document.querySelector('meta[name="csrf-token"]')?.content?.slice(0, 8);
+            if (sessionStorage.getItem('toastsDismissed')) {
+                container.remove();
+                return;
+            }
+
+            // Marcar como mostrados
+            sessionStorage.setItem('toastsDismissed', '1');
+
+            // Auto-dismiss tras 5s
+            const toasts = container.querySelectorAll('.toast-error');
+            toasts.forEach(toast => {
+                setTimeout(() => {
+                    toast.style.transition = "opacity 0.5s ease";
+                    toast.style.opacity = "0";
+                    setTimeout(() => toast.remove(), 500);
+                }, 5000);
+            });
+        })();
+
+        // También limpiar en bfcache por si acaso
+        window.addEventListener('pageshow', function(e) {
+            if (e.persisted) {
+                const container = document.getElementById('toastContainer');
+                if (container) container.remove();
+            }
+        });
+    </script>
 
     {{-- Script para continuar la guía de pagos (Paso 2) --}}
     <script>
@@ -121,6 +192,7 @@
 
         // ============ INICIO DEL SCRIPT ============
         document.addEventListener('DOMContentLoaded', function() {
+
             // Verificar si debe continuar con la guía de pagar
             const estadoGuia = obtenerEstadoGuia();
             
